@@ -41,7 +41,7 @@ public class MainActivity extends IOIOActivity {
 		private static final int PANSWITCH0 = 35;
 		private static final int PANSWITCH1 = 39;
 		private static final int TILTSWITCH0 = 43;
-		private static final int TILTSWITCH1 = 46; // soon
+		private static final int TILTSWITCH1 = 46;
 
 		private static final int PANMOTOR0 = 12;
 		private static final int PANMOTOR1 = 14;
@@ -49,6 +49,7 @@ public class MainActivity extends IOIOActivity {
 		private static final int TILTMOTOR1 = 6;
 
 		private static final int PWMFREQ = 2000;
+		private static final float PWMMAXDUTY = 0.8f; 
 
 		// these should be in a class...
 		private DigitalInput panSwitch0, panSwitch1, tiltSwitch0, tiltSwitch1;
@@ -57,6 +58,7 @@ public class MainActivity extends IOIOActivity {
 		// state
 		private int panDirection, tiltDirection;
 		private float currentPanDutyCycle, currentTiltDutyCycle;
+		private boolean readPan, readTilt;
 
 		/**
 		 * Called every time a connection with IOIO has been established.
@@ -81,6 +83,7 @@ public class MainActivity extends IOIOActivity {
 
 			panDirection = tiltDirection = 1;
 			currentPanDutyCycle = currentTiltDutyCycle = 0.0f;
+			readPan = readTilt = true;
 		}
 
 		/**
@@ -94,23 +97,26 @@ public class MainActivity extends IOIOActivity {
 		@Override
 		public void loop() throws ConnectionLostException {
 			try {
-				if(!panSwitch0.read()){
+				if(readPan && !panSwitch0.read()){
 					panDirection = -1;
 					currentPanDutyCycle = 0.0f;
 				}
-				if(!panSwitch1.read()){
+				if(readPan && !panSwitch1.read()){
 					panDirection = 1;
 					currentPanDutyCycle = 0.0f;
 				}
 
-				if(!tiltSwitch0.read()){
+				if(readTilt && !tiltSwitch0.read()){
 					tiltDirection = -1;
 					currentTiltDutyCycle = 0.0f;
 				}
-				if(!tiltSwitch1.read()){
+				if(readTilt && !tiltSwitch1.read()){
 					tiltDirection = 1;
 					currentTiltDutyCycle = 0.0f;
 				}
+
+				readPan = (panSwitch0.read() && panSwitch1.read());
+				readTilt = (tiltSwitch0.read() && tiltSwitch1.read());
 
 				panMotor0.setDutyCycle((panDirection>0)?currentPanDutyCycle:0.0f);
 				panMotor1.setDutyCycle((panDirection>0)?0.0f:currentPanDutyCycle);
@@ -118,8 +124,8 @@ public class MainActivity extends IOIOActivity {
 				tiltMotor0.setDutyCycle((tiltDirection>0)?currentTiltDutyCycle:0.0f);
 				tiltMotor1.setDutyCycle((tiltDirection>0)?0.0f:currentTiltDutyCycle);
 
-				currentPanDutyCycle += (currentPanDutyCycle<0.5)?0.005f:0.0f;
-				currentTiltDutyCycle += (currentTiltDutyCycle<0.5)?0.005f:0.0f;
+				currentPanDutyCycle += (currentPanDutyCycle<PWMMAXDUTY)?0.005f:0.0f;
+				currentTiltDutyCycle += (currentTiltDutyCycle<PWMMAXDUTY)?0.005f:0.0f;
 
 				Thread.sleep(10);
 			}
