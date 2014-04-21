@@ -1,4 +1,4 @@
 .DS*
-Android/bin
-Android/gen
-Android/proguard.cfg
+Android/*/bin
+Android/*/gen
+Android/*/proguard.cfg
