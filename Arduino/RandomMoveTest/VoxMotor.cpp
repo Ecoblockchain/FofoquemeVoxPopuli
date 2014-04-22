@@ -22,6 +22,22 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
   pinMode(limit[0], INPUT_PULLUP);
   pinMode(limit[1], INPUT_PULLUP);
 
+  // make sure switches are not pressed initially
+  if(!(digitalRead(limit[0]) && digitalRead(limit[1]))){
+    analogWrite(pin[0], 255);
+    analogWrite(pin[1], 85);
+    delay(200);
+    analogWrite(pin[0], 255);
+    analogWrite(pin[1], 255);
+  }
+  if(!(digitalRead(limit[0]) && digitalRead(limit[1]))){
+    analogWrite(pin[0], 85);
+    analogWrite(pin[1], 255);
+    delay(200);
+    analogWrite(pin[0], 255);
+    analogWrite(pin[1], 255);
+  }
+
   while(digitalRead(limit[0]) && digitalRead(limit[1])){
     // pwm motor0
     analogWrite(pin[0], 85);
@@ -36,7 +52,7 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
     limit[1] = switch0;
   }
 
-  // unpress switch  
+  // unpress switch
   while(!(digitalRead(limit[0]) && digitalRead(limit[1]))){
     analogWrite(pin[0], 255);
     analogWrite(pin[1], 85);
