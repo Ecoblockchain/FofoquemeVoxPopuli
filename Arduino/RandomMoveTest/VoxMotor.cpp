@@ -65,7 +65,7 @@ void VoxMotor::update() {
     analogWrite(pin[1], 255);
     if(millis() > changeStateMillis){
       currentDirection = (random(10)<5);
-      changeStateMillis = millis()+random(200,500);
+      changeStateMillis = millis()+random(500,800);
       currentState = MOVE;
     }
   }
