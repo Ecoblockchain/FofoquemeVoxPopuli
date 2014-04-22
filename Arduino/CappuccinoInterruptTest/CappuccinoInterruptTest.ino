@@ -23,11 +23,11 @@ float currentPanDutyCycle, currentTiltDutyCycle;
 
 void onInterrupt(){
   if(PCintPort::arduinoPin == PAN_SWITCH0){
-    panDirection = -1;
+    panDirection = 1;
     currentPanDutyCycle = 0;
   }
   else if(PCintPort::arduinoPin == PAN_SWITCH1){
-    panDirection = 1;
+    panDirection = -1;
     currentPanDutyCycle = 0;
   }
   else if(PCintPort::arduinoPin == TILT_SWITCH0){
@@ -61,7 +61,8 @@ void setup() {
   analogWrite(TILT_PWM0, 0);
   analogWrite(TILT_PWM1, 0);
 
-  panDirection = tiltDirection = 1;
+  panDirection = (digitalRead(PAN_SWITCH1)==LOW)?-1:1;
+  tiltDirection = (digitalRead(TILT_SWITCH1)==LOW)?1:-1;
   currentPanDutyCycle = currentTiltDutyCycle = 0;
 }
 
