@@ -43,16 +43,25 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
     delay(500);
   }
 
-  while(digitalRead(limit[0]) && digitalRead(limit[1])){
-    // pwm motor0
-    analogWrite(pin[0], (1.0-PWM_CALIBRATE_DUTY)*255.0);
-    analogWrite(pin[1], 255);
-  }
+  boolean calibrate = true;
+  // pwm motor0
+  analogWrite(pin[0], (1.0-PWM_CALIBRATE_DUTY)*255.0);
+  analogWrite(pin[1], 255);
 
-  // if limit[1] was hit, swicth limits
-  if(digitalRead(limit[0])){
-    limit[0] = switch1;
-    limit[1] = switch0;
+  while(calibrate){
+    // if limit[0] was hit, stop calibration
+    if(!digitalRead(limit[0]){
+      calibrate = false;
+      analogWrite(pin[0], 255);
+    }
+
+    // if limit[1] was hit, swicth limits and stop calibration
+    if(!digitalRead(limit[1])){
+      limit[0] = switch1;
+      limit[1] = switch0;
+      calibrate = false;
+      analogWrite(pin[0], 255);
+    }
   }
 
   // unpress switch
