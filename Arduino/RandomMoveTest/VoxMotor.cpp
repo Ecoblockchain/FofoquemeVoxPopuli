@@ -50,7 +50,7 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
 
   while(calibrate){
     // if limit[0] was hit, stop calibration
-    if(!digitalRead(limit[0]){
+    if(!digitalRead(limit[0])){
       calibrate = false;
       analogWrite(pin[0], 255);
     }
