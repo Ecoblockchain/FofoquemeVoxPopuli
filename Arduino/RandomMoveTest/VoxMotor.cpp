@@ -93,12 +93,21 @@ void VoxMotor::update() {
     analogWrite(pin[1], 255);
     if(millis() > changeStateMillis){
       currentDirection = (random(10)<5);
-      changeStateMillis = millis()+random(500,800);
-      currentState = MOVE;
+      changeStateMillis = millis()+random(300,500);
+      currentState = SPEED_UP;
     }
   }
-  if(currentState == MOVE){
+  if(currentState == SPEED_UP){
     currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.05:0;
+    analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
+    analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
+    if(millis() > changeStateMillis){
+      changeStateMillis = millis()+random(300,500);
+      currentState = SPEED_DOWN;
+    }
+  }
+  if(currentState == SPEED_DOWN){
+    currentDutyCycle -= (currentDutyCycle>0.05)?0.05:0;
     analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
     analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
     if(millis() > changeStateMillis){

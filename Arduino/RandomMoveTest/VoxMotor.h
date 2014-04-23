@@ -2,7 +2,7 @@
 
 class VoxMotor {
   enum StateType { 
-    PAUSE, MOVE   };
+    PAUSE, SPEED_UP, SPEED_DOWN  };
   int pin[2];
   int limit[2];
   short currentDirection;
