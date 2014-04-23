@@ -93,7 +93,7 @@ void VoxMotor::update() {
     analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
     analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
     if(millis() > changeStateMillis){
-      changeStateMillis = millis()+random(3000,8000);
+      changeStateMillis = millis()+random(2000,4000);
       currentState = PAUSE;
     }
   }
