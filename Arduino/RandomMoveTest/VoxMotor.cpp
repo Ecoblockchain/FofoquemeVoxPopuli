@@ -69,6 +69,7 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
     analogWrite(pin[0], 255);
     analogWrite(pin[1], (1.0-PWM_CALIBRATE_DUTY)*255.0);
   }
+  analogWrite(pin[1], 255);
 
   changeStateMillis = millis() + 1000;
   currentState = VoxMotor::PAUSE;
@@ -93,21 +94,22 @@ void VoxMotor::update() {
     analogWrite(pin[1], 255);
     if(millis() > changeStateMillis){
       currentDirection = (random(10)<5);
-      changeStateMillis = millis()+random(300,500);
-      currentState = SPEED_UP;
+      rampDurationMillis = random(500,800);
+      changeStateMillis = millis()+rampDurationMillis;
+        currentState = SPEED_UP;
     }
   }
   if(currentState == SPEED_UP){
-    currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.05:0;
+    currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
     analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
     analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
     if(millis() > changeStateMillis){
-      changeStateMillis = millis()+random(300,500);
+      changeStateMillis = millis()+rampDurationMillis;
       currentState = SPEED_DOWN;
     }
   }
   if(currentState == SPEED_DOWN){
-    currentDutyCycle -= (currentDutyCycle>0.05)?0.05:0;
+    currentDutyCycle -= (currentDutyCycle>0.1)?0.1:0;
     analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
     analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
     if(millis() > changeStateMillis){

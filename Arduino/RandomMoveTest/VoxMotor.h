@@ -8,6 +8,7 @@ class VoxMotor {
   short currentDirection;
   float currentDutyCycle;
   unsigned long changeStateMillis;
+  unsigned long rampDurationMillis;
   StateType currentState;
 
 public:
