@@ -17,8 +17,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ToggleButton;
 
-import com.android.future.usb.UsbAccessory;
-import com.android.future.usb.UsbManager;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 
 public class ADKTestActivity extends Activity {
  
@@ -43,7 +43,7 @@ public class ADKTestActivity extends Activity {
 			String action = intent.getAction();
 			if (ACTION_USB_PERMISSION.equals(action)) {
 				synchronized (this) {
-					UsbAccessory accessory = UsbManager.getAccessory(intent);
+					UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						openAccessory(accessory);
 					} 
@@ -54,7 +54,7 @@ public class ADKTestActivity extends Activity {
 				}
 			} 
 			else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-				UsbAccessory accessory = UsbManager.getAccessory(intent);
+				UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
 				if (accessory != null && accessory.equals(mAccessory)) {
 					closeAccessory();
 				}
@@ -66,7 +66,7 @@ public class ADKTestActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
  
-		mUsbManager = UsbManager.getInstance(this);
+		mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
 		mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
 		filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
@@ -146,9 +146,9 @@ public class ADKTestActivity extends Activity {
 		byte[] buffer = new byte[1];
  
 		if(buttonLED.isChecked())
-			buffer[0]=(byte)0; // button says on, light is off
+			buffer[0]=(byte)1; // button says on, light is off
 		else
-			buffer[0]=(byte)1; // button says off, light is on
+			buffer[0]=(byte)0; // button says off, light is on
  
 		if (mOutputStream != null) {
 			try {
