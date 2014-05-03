@@ -24,14 +24,13 @@ public class ADKTestActivity extends Activity {
  
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "ArduinoAccessory";
-
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
- 
+
 	private UsbManager mUsbManager;
 	private PendingIntent mPermissionIntent;
 	private boolean mPermissionRequestPending;
 	private ToggleButton buttonLED;
- 
+
 	UsbAccessory mAccessory;
 	ParcelFileDescriptor mFileDescriptor;
 	FileInputStream mInputStream;
