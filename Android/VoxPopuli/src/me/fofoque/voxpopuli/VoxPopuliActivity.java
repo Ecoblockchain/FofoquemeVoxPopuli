@@ -15,6 +15,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -33,6 +35,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPop ";
 	private static final String VOICE_MESSAGE_STRING = "!!!VOXPOPULI!!!";
+	private static final String VOICE_MESSAGE_URL = "http://server/latest.mp3";
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 
 	private UsbManager mUsbManager;
@@ -46,6 +49,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	FileOutputStream mOutputStream;
  
 	private TextToSpeech myTTS = null;
+	private MediaPlayer myAudioPlayer = null;
 	private SMSReceiver mySMS = null;
 	
 	private class MotorMessage {
@@ -94,7 +98,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
-	
 	private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -133,9 +136,18 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		
 		// FFQ
 		myTTS = (myTTS == null)?(new TextToSpeech(this, this)):myTTS;
+		myAudioPlayer = (myAudioPlayer == null)?(new MediaPlayer()):myAudioPlayer;
 		mySMS = (mySMS == null)?(new SMSReceiver()):mySMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
 		registerReceiver(mySMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
+		myAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		myAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				mp.stop();
+				VoxPopuliActivity.this.checkQueues();
+			}
+		});
 
 		// GUI
 		setContentView(R.layout.main);
@@ -182,6 +194,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		if(myTTS != null){
 			myTTS.shutdown();
 		}
+		if (myAudioPlayer != null) myAudioPlayer.release();
 		super.onDestroy();
 	}
 
@@ -223,7 +236,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	}
 
 	private void checkQueues(){
-		if(myTTS.isSpeaking()){ // || myAudio.isSpeaking()
+		if(myTTS.isSpeaking() || myAudioPlayer.isPlaying()){
 			return;
 		}
 
@@ -235,8 +248,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			if (mOutputStream != null) {
 				byte[] buffer = {(byte)0xff, (byte)0x93, (byte)nextMessage.pan, (byte)nextMessage.tilt};
 				try {
-					mOutputStream.write(buffer);
 					long startWaitMillis = System.currentTimeMillis();
+					mOutputStream.write(buffer);
+					myAudioPlayer.prepare();
 					while((mInputStream.available() < 1) && (System.currentTimeMillis() - startWaitMillis < 4000)){
 						Thread.sleep(100);
 					}
@@ -256,8 +270,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private void playMessage(String msg){
 		if(msg == VOICE_MESSAGE_STRING){
-			// TODO: play audio
-			// TODO: hopefully non-blocking, with a donePlayingCallback
+			try{
+				myAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
+				myAudioPlayer.start();
+			}
+			catch(IOException e){
+				Log.e(TAG, "failed to open stream", e);
+			}
 		}
 		else{
 			HashMap<String,String> foo = new HashMap<String,String>();
