@@ -48,9 +48,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	FileInputStream mInputStream;
 	FileOutputStream mOutputStream;
  
-	private TextToSpeech myTTS = null;
-	private MediaPlayer myAudioPlayer = null;
-	private SMSReceiver mySMS = null;
+	private TextToSpeech mTTS = null;
+	private MediaPlayer mAudioPlayer = null;
+	private SMSReceiver mSMS = null;
 	
 	private class MotorMessage {
 		public String msg;
@@ -135,13 +135,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		registerReceiver(mUsbReceiver, filter);
 		
 		// FFQ
-		myTTS = (myTTS == null)?(new TextToSpeech(this, this)):myTTS;
-		myAudioPlayer = (myAudioPlayer == null)?(new MediaPlayer()):myAudioPlayer;
-		mySMS = (mySMS == null)?(new SMSReceiver()):mySMS;
+		mTTS = (mTTS == null)?(new TextToSpeech(this, this)):mTTS;
+		mAudioPlayer = (mAudioPlayer == null)?(new MediaPlayer()):mAudioPlayer;
+		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
-		registerReceiver(mySMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
-		myAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-		myAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+		registerReceiver(mSMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
+		mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 			@Override
 			public void onCompletion(MediaPlayer mp) {
 				mp.stop();
@@ -190,9 +190,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onDestroy() {
 		unregisterReceiver(mUsbReceiver);
-		unregisterReceiver(mySMS);
-		if(myTTS != null) myTTS.shutdown();
-		if (myAudioPlayer != null) myAudioPlayer.release();
+		unregisterReceiver(mSMS);
+		if(mTTS != null) mTTS.shutdown();
+		if (mAudioPlayer != null) mAudioPlayer.release();
 		super.onDestroy();
 	}
 
@@ -200,15 +200,15 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	public void onInit(int status){
 		// set the package and language for tts
 		//   these are the values for Luciana
-		myTTS.setEngineByPackageName("com.svox.classic");
-		myTTS.setLanguage(new Locale("pt_BR"));
+		mTTS.setEngineByPackageName("com.svox.classic");
+		mTTS.setLanguage(new Locale("pt_BR"));
 
 		// slow her down a little...
-		myTTS.setSpeechRate(0.66f);
-		myTTS.setPitch(1.0f);
+		mTTS.setSpeechRate(0.66f);
+		mTTS.setPitch(1.0f);
 
 		// attach listener
-		myTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
+		mTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
 			@Override
 			public void onUtteranceCompleted (String utteranceId){
 				// check if there are things to be said
@@ -216,7 +216,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			}
 		});
 
-		Log.d(TAG, "TTS ready! "+myTTS.getLanguage().toString());
+		Log.d(TAG, "TTS ready! "+mTTS.getLanguage().toString());
 	}
 
 	private void onOscReceive(){
@@ -234,7 +234,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	}
 
 	private void checkQueues(){
-		if(myTTS.isSpeaking() || myAudioPlayer.isPlaying()){
+		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying()){
 			return;
 		}
 
@@ -248,7 +248,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				try {
 					long startWaitMillis = System.currentTimeMillis();
 					mOutputStream.write(buffer);
-					myAudioPlayer.prepare();
+					mAudioPlayer.prepare();
 					while((mInputStream.available() < 1) && (System.currentTimeMillis() - startWaitMillis < 4000)){
 						Thread.sleep(100);
 					}
@@ -269,8 +269,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private void playMessage(String msg){
 		if(msg == VOICE_MESSAGE_STRING){
 			try{
-				myAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
-				myAudioPlayer.start();
+				mAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
+				mAudioPlayer.start();
 			}
 			catch(IOException e){
 				Log.e(TAG, "failed to open stream", e);
@@ -280,7 +280,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			HashMap<String,String> foo = new HashMap<String,String>();
 			foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
 			// pause before and afterwards.
-			myTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
+			mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
 		}
 	}
 
