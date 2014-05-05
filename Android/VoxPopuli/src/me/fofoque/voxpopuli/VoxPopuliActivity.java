@@ -191,9 +191,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	public void onDestroy() {
 		unregisterReceiver(mUsbReceiver);
 		unregisterReceiver(mySMS);
-		if(myTTS != null){
-			myTTS.shutdown();
-		}
+		if(myTTS != null) myTTS.shutdown();
 		if (myAudioPlayer != null) myAudioPlayer.release();
 		super.onDestroy();
 	}
@@ -305,8 +303,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			if (mFileDescriptor != null) {
 				mFileDescriptor.close();
 			}
-		} catch (IOException e) {
-		} finally {
+		}
+		catch (IOException e) {}
+		finally {
 			mFileDescriptor = null;
 			mAccessory = null;
 		}
