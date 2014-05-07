@@ -71,6 +71,7 @@ def setup():
 		audioInput.setperiodsize(256)
 	except:
 		print "couldn't start audio device"
+		audioInput = None
 
 def loop():
 	global messageQ, clientMap, oscOut, currentButtonState, lastDownTime, isRecording, audioThread
