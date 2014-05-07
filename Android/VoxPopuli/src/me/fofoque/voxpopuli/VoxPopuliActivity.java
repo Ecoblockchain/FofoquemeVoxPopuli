@@ -201,6 +201,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		catch(SocketException e){}
 		catch(UnknownHostException e){}
 
+		// for the pings
+		checkQueues();
+
 		// GUI
 		setContentView(R.layout.main);
 		buttonLED = (ToggleButton) findViewById(R.id.ledButton);
