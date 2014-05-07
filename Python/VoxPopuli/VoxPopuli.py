@@ -1,14 +1,31 @@
 # -*- coding: utf-8 -*-
 
 from time import time, sleep
+from sys import exit
 from threading import Thread
 from Queue import Queue
 from socket import gethostname
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
-
+import Adafruit_BBIO.GPIO as GPIO
+import alsaaudio
 
 OSC_IN_ADDRESS = gethostname()+".local"
 OSC_IN_PORT = 8888
+LED_PIN = "P8_7"
+SWITCH_PIN = "P8_8"
+
+class RecordThread(Thread):
+	def __init__(self):
+		super(RecordThread, self).__init__()
+		self.audioFile = open("foo.wav", 'wb')
+
+	def run(self):
+		while(isRecording):
+			l, data = audioInput.read()
+			if l:
+				self.audioFile.write(data)
+				sleep(0.001)
+		self.audioFile.close()
 
 def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
@@ -22,7 +39,7 @@ def _oscHandler(addr, tags, stuff, source):
 		clientMap[(ip,port)] = time()
 
 def setup():
-	global messageQ, clientMap, oscIn, oscOut, oscThread
+	global messageQ, clientMap, oscIn, oscOut, oscThread, currentButtonState, lastDownTime, isRecording, audioInput
 	messageQ = Queue()
 	clientMap = {}
 
@@ -35,9 +52,47 @@ def setup():
 	oscThread = Thread(target = oscIn.serve_forever)
 	oscThread.start()
 
-def loop():
-	global messageQ, clientMap, oscOut
+	## setup gpio
+	GPIO.setup(SWITCH_PIN, GPIO.IN)
+	GPIO.setup(LED_PIN, GPIO.OUT)
+	GPIO.output(LED_PIN, GPIO.LOW)
+	currentButtonState = GPIO.input(SWITCH_PIN)
+	lastDownTime = 0
+	isRecording = False
 
+	## setup audio
+	audioInput = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, "default:Headset")
+	audioInput.setchannels(1)
+	audioInput.setrate(44100)
+	audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+	audioInput.setperiodsize(256)
+
+
+def loop():
+	global messageQ, clientMap, oscOut, currentButtonState, lastDownTime, isRecording, audioThread
+
+	## deal with UI
+	previousButtonState = currentButtonState
+	currentButtonState = GPIO.input(SWITCH_PIN)
+	buttonJustGotPressed = (currentButtonState is GPIO.HIGH and previousButtonState is GPIO.LOW)
+	buttonJustGotReleased = (currentButtonState is GPIO.LOW and previousButtonState is GPIO.HIGH)
+	if buttonJustGotPressed:
+		lastDownTime = time()
+
+	if (isRecording):
+		if((time()-lastDownTime > 8.0) or
+			(buttonJustGotReleased and (time()-lastDownTime > 1.0)) or
+			buttonJustGotPressed):
+			isRecording = False
+			audioThread.join()
+	elif buttonJustGotPressed:
+			isRecording = True
+			audioThread = RecordThread()
+			audioThread.start()
+
+	GPIO.output(LED_PIN, GPIO.HIGH if isRecording else GPIO.LOW)
+
+	## deal with messages
 	if(not messageQ.empty()):
 		# TODO change this to something more complicated...
 		# TODO nltk
