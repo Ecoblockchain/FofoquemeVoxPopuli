@@ -4,6 +4,10 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -30,12 +34,20 @@ import android.telephony.SmsMessage;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
 
+import com.illposed.osc.OSCMessage;
+import com.illposed.osc.OSCListener;
+import com.illposed.osc.OSCPortIn;
+import com.illposed.osc.OSCPortOut;
+
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
  
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPop ";
-	private static final String VOICE_MESSAGE_STRING = "!!!VOXPOPULI!!!";
+	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 	private static final String VOICE_MESSAGE_URL = "http://server/latest.mp3";
+	private static final String OSC_OUT_ADDRESS = "server.local";
+	private static final int OSC_OUT_PORT = 8888;
+	private static final int OSC_IN_PORT = 8989;
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 
 	private UsbManager mUsbManager;
@@ -52,6 +64,26 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private MediaPlayer mAudioPlayer = null;
 	private SMSReceiver mSMS = null;
 	
+	private OSCPortIn mOscIn = null;
+	private OSCPortOut mOscOut = null;
+	OSCListener mOscListener = new OSCListener() {
+		public void acceptMessage(Date time, OSCMessage message) {
+			System.out.println("Message received!: "+message.getAddress()+" "+message.getArguments());
+			// read: msg, pan, tilt from osc
+			String msg = (String)(message.getArguments().get(0));
+			byte pan = ((Byte)(message.getArguments().get(1))).byteValue();
+			byte tilt = ((Byte)(message.getArguments().get(2))).byteValue();
+
+			if(msg == VOICE_MESSAGE_STRING){
+				((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
+			}
+			else {
+				msgQueue.offer(new MotorMessage(msg, pan, tilt));
+			}
+			checkQueues();
+		}
+	};
+
 	private class MotorMessage {
 		public String msg;
 		public byte pan, tilt;
@@ -91,7 +123,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						message = message.replaceAll("[@#]?", "");
 						message = message.replaceAll("[():]+", "");
 						
-						// TODO: send to server (via osc??)
+						// send to server
+						OSCMessage oscMsg = new OSCMessage("/ffqmesms");
+						oscMsg.addArgument(new String(message));
+						try{
+							mOscOut.send(oscMsg);
+						}
+						catch(IOException e){}
 					}
 				}
 			}
@@ -149,6 +187,20 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			}
 		});
 
+		// OSC
+		try{
+			mOscIn = (mOscIn == null)?(new OSCPortIn(OSC_IN_PORT)):mOscIn;
+			mOscIn.addListener("/ffqmevox", mOscListener);
+			mOscIn.startListening();
+		}
+		catch(SocketException e){}
+
+		try{
+			mOscOut = (mOscOut == null)?(new OSCPortOut(InetAddress.getByName(OSC_OUT_ADDRESS),OSC_OUT_PORT)):mOscOut;
+		}
+		catch(SocketException e){}
+		catch(UnknownHostException e){}
+
 		// GUI
 		setContentView(R.layout.main);
 		buttonLED = (ToggleButton) findViewById(R.id.ledButton);
@@ -193,6 +245,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		unregisterReceiver(mSMS);
 		if(mTTS != null) mTTS.shutdown();
 		if (mAudioPlayer != null) mAudioPlayer.release();
+		if(mOscIn != null) mOscIn.close();
+		if(mOscOut != null) mOscOut.close();
 		super.onDestroy();
 	}
 
@@ -217,20 +271,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		});
 
 		Log.d(TAG, "TTS ready! "+mTTS.getLanguage().toString());
-	}
-
-	private void onOscReceive(){
-		// TODO: read: msg, pan, tilt from osc
-		String msg = "";
-		byte pan=0, tilt=0;
-
-		if(msg == VOICE_MESSAGE_STRING){
-			((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
-		}
-		else {
-			msgQueue.offer(new MotorMessage(msg, pan, tilt));
-		}
-		checkQueues();
 	}
 
 	private void checkQueues(){

@@ -5,7 +5,8 @@ Some Dependencies:
   [USB host shield 2.0](https://github.com/felis/USB_Host_Shield_2.0)
 
 - Android:  
-  android > 3.1
+  android > 3.1  
+  [JavaOSC](https://github.com/hoijui/JavaOSC)  
 
 - Python:  
   [nltk](http://www.nltk.org/)  
