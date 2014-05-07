@@ -274,15 +274,22 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	}
 
 	private void checkQueues(){
+		// ping server
+		OSCMessage oscMsg = new OSCMessage("/ffqmeping");
+		oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
+		try{
+			mOscOut.send(oscMsg);
+		}
+		catch(IOException e){}
+
+		// if soing something, return
 		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying()){
 			return;
 		}
 
+		// check queue for new messages
 		if(msgQueue.peek() != null){
 			MotorMessage nextMessage = msgQueue.poll();
-			if(msgQueue.peek() == null){
-				// TODO: tell server we just got empty?
-			}
 			if (mOutputStream != null) {
 				byte[] buffer = {(byte)0xff, (byte)0x93, (byte)nextMessage.pan, (byte)nextMessage.tilt};
 				try {
