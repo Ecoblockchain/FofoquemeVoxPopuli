@@ -39,7 +39,8 @@ def _oscHandler(addr, tags, stuff, source):
 		clientMap[(ip,port)] = time()
 
 def setup():
-	global messageQ, clientMap, oscIn, oscOut, oscThread, currentButtonState, lastDownTime, isRecording, audioInput
+	global currentButtonState, lastDownTime, isRecording, audioInput
+	global messageQ, clientMap, oscIn, oscOut, oscThread
 	messageQ = Queue()
 	clientMap = {}
 
@@ -61,12 +62,15 @@ def setup():
 	isRecording = False
 
 	## setup audio
-	audioInput = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, "default:Headset")
-	audioInput.setchannels(1)
-	audioInput.setrate(44100)
-	audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-	audioInput.setperiodsize(256)
-
+	audioInput = None
+	try:
+		audioInput = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, "default:Headset")
+		audioInput.setchannels(1)
+		audioInput.setrate(44100)
+		audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+		audioInput.setperiodsize(256)
+	except:
+		print "couldn't start audio device"
 
 def loop():
 	global messageQ, clientMap, oscOut, currentButtonState, lastDownTime, isRecording, audioThread
@@ -86,7 +90,7 @@ def loop():
 			isRecording = False
 			audioThread.join()
 	elif buttonJustGotPressed:
-			isRecording = True
+			isRecording = (not audioInput is None)
 			audioThread = RecordThread()
 			audioThread.start()
 
