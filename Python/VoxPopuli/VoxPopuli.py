@@ -10,7 +10,7 @@ from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
 OSC_IN_ADDRESS = gethostname()+".local"
 OSC_IN_PORT = 8888
 
-def _oscHandler(self, addr, tags, stuff, source):
+def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
 
 	if (addrTokens[0].lower() == "ffqmesms"):
@@ -18,6 +18,7 @@ def _oscHandler(self, addr, tags, stuff, source):
 	elif (addrTokens[0].lower() == "ffqmeping"):
 		ip = getUrlStr(source).split(":")[0]
 		port = stuff[0]
+		print "got ping from %s %s" % (ip,port)
 		clientMap[(ip,port)] = time()
 
 def setup():
