@@ -116,7 +116,7 @@ def loop():
 			if(time()-clientMap[(i,p)] < 60):
 				oscMsg = OSCMessage()
 				oscMsg.setAddress("/ffqmevox")
-				oscMsg.append(msg)
+				oscMsg.append(msg.encode('utf-8'))
 				## TODO: pan and tilt and delay
 				oscMsg.append(0)
 				oscMsg.append(0)
