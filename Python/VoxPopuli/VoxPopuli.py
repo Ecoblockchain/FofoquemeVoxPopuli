@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# to run: echo passwd | sudo python VoxPopuli.py
+
 from time import time, sleep
 from sys import exit
 from threading import Thread
+from subprocess import call
 from Queue import Queue
 from socket import gethostname
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
@@ -17,7 +20,7 @@ SWITCH_PIN = "P8_8"
 class RecordThread(Thread):
 	def __init__(self):
 		super(RecordThread, self).__init__()
-		self.audioFile = open("foo.wav", 'wb')
+		self.audioFile = open("foo.raw", 'wb')
 
 	def run(self):
 		while(isRecording):
@@ -90,6 +93,7 @@ def loop():
 			buttonJustGotPressed):
 			isRecording = False
 			audioThread.join()
+			call('lame -mm -r foo.raw foo.mp3', shell=True)
 	elif buttonJustGotPressed:
 			isRecording = (not audioInput is None)
 			audioThread = RecordThread()
