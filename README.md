@@ -11,5 +11,6 @@ Some Dependencies:
 - Python:  
   [nltk](http://www.nltk.org/)  
   [Adafruit BBIO lib](https://learn.adafruit.com/setting-up-io-python-library-on-beaglebone-black/installation)  
-  [pyalsaaudio](http://pyalsaaudio.sourceforge.net/)  
-  [pyOSC](https://pypi.python.org/pypi/pyOSC)
+  [RPi.GPIO](apt-get install python-rpi.gpio)  
+  [pyalsaaudio](apt-get install python-alsaaudio)  
+  [pyOSC](https://pypi.python.org/pypi/pyOSC)  
