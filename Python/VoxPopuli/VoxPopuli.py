@@ -12,7 +12,7 @@ import RPi.GPIO as GPIO
 import alsaaudio
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-OSC_IN_ADDRESS = "voxserver.local"
+OSC_IN_ADDRESS = "200.0.0.101"
 OSC_IN_PORT = 8888
 LED_PIN = 23
 SWITCH_PIN = 24
@@ -35,12 +35,12 @@ def _oscHandler(addr, tags, stuff, source):
 	print addrTokens
 
 	if (addrTokens[0].lower() == "ffqmesms"):
-		ip = getUrlStr(source).split(":")[0]
+		ip = source[0]
 		msg = stuff[0].decode('utf-8')
 		print "got %s from %s" % (msg,ip)
 		messageQ.put((5, msg))
 	elif (addrTokens[0].lower() == "ffqmeping"):
-		ip = getUrlStr(source).split(":")[0]
+		ip = source[0]
 		port = stuff[0]
 		print "got ping from %s %s" % (ip,port)
 		clientMap[(ip,int(port))] = time()
