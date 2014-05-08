@@ -72,26 +72,36 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
   analogWrite(pin[1], 255);
 
   changeStateMillis = millis() + 1000;
-  currentState = VoxMotor::PAUSE;
+  currentState = VoxMotor::WAIT;
+  currentPosition = targetPosition = 0;
 }
 
 void VoxMotor::stop() {
   analogWrite(pin[currentDirection], 255);
 }
 
-boolean VoxMotor::isMoving() {
-  return (currentState != PAUSE);
+boolean VoxMotor::isDone() {
+  return (currentState == DONE);
+}
+void VoxMotor::goWait() {
+  currentState = WAIT;
 }
 
 void VoxMotor::setTarget(byte t) {
-  // TODO: target
+  targetPosition = t;
   currentDutyCycle = 0.0;
   analogWrite(pin[0], 255);
   analogWrite(pin[1], 255);
-  currentDirection = (random(10)<5);
-  rampDurationMillis = random(500,800);
-  changeStateMillis = millis()+rampDurationMillis;
-  currentState = SPEED_UP;
+
+  if(abs(targetPosition - currentPosition) > 100){
+    currentDirection = (random(10)<5);
+    rampDurationMillis = random(500,800);
+    changeStateMillis = millis()+rampDurationMillis;
+    currentState = SPEED_UP;
+  }
+  else{
+    currentState = DONE;
+  }
 }
 
 void VoxMotor::update() {
@@ -103,7 +113,7 @@ void VoxMotor::update() {
     currentDirection = 0;
   }
 
-  if(currentState == PAUSE){
+  if((currentState == DONE) || (currentState == WAIT)){
     currentDutyCycle = 0.0;
     analogWrite(pin[0], 255);
     analogWrite(pin[1], 255);
@@ -122,7 +132,8 @@ void VoxMotor::update() {
     analogWrite(pin[0], (currentDirection==0)?(1.0-currentDutyCycle)*255.0:255);
     analogWrite(pin[1], (currentDirection==1)?(1.0-currentDutyCycle)*255.0:255);
     if(millis() > changeStateMillis){
-      currentState = PAUSE;
+      currentState = DONE;
+      currentPosition = targetPosition;
     }
   }
 }

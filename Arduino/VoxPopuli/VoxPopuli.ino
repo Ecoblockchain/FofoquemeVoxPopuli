@@ -69,9 +69,11 @@ void loop() {
   panMotor.update();
   tiltMotor.update();
 
-  if(!(panMotor.isMoving() || tiltMotor.isMoving())){
+  if(!(panMotor.isDone() || tiltMotor.isDone())){
       byte doneSignal = 0xf9;
       uint8_t rcode = adk.SndData(sizeof(doneSignal), (uint8_t*)&doneSignal);
+      panMotor.goWait();
+      tiltMotor.goWait();
   }
 }
 
