@@ -6,12 +6,13 @@ from time import time, sleep
 from sys import exit
 from threading import Thread
 from subprocess import call
-from Queue import Queue
+from Queue import PriorityQueue
 from socket import gethostname
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
 import Adafruit_BBIO.GPIO as GPIO
 import alsaaudio
 
+VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 OSC_IN_ADDRESS = gethostname()+".local"
 OSC_IN_PORT = 8888
 LED_PIN = "P8_7"
@@ -34,7 +35,7 @@ def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
 
 	if (addrTokens[0].lower() == "ffqmesms"):
-		messageQ.put(stuff[0].decode('utf-8'))
+		messageQ.put((5, stuff[0].decode('utf-8')))
 	elif (addrTokens[0].lower() == "ffqmeping"):
 		ip = getUrlStr(source).split(":")[0]
 		port = stuff[0]
@@ -44,7 +45,7 @@ def _oscHandler(addr, tags, stuff, source):
 def setup():
 	global currentButtonState, lastDownTime, isRecording, audioInput
 	global messageQ, clientMap, oscIn, oscOut, oscThread
-	messageQ = Queue()
+	messageQ = PriorityQueue()
 	clientMap = {}
 
 	## setup osc client
@@ -94,6 +95,7 @@ def loop():
 			isRecording = False
 			audioThread.join()
 			call('lame -mm -r foo.raw foo.mp3', shell=True)
+			messageQ.put((1, VOICE_MESSAGE_STRING))
 	elif buttonJustGotPressed:
 			isRecording = (not audioInput is None)
 			audioThread = RecordThread()
@@ -105,12 +107,15 @@ def loop():
 	if(not messageQ.empty()):
 		# TODO change this to something more complicated...
 		# TODO nltk
-		msg = messageQ.get()
+		msg = messageQ.get()[1]
 		for (i,p) in clientMap:
 			if(time()-clientMap[(i,p)] < 60):
 				oscMsg = OSCMessage()
 				oscMsg.setAddress("/ffqmevox")
 				oscMsg.append(msg)
+				## TODO: pan and tilt
+				oscMsg.append(0)
+				oscMsg.append(0)
 				try:
 					oscOut.connect((i,p))
 					oscOut.sendto(msg, (i,p))
