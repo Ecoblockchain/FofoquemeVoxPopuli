@@ -42,10 +42,10 @@ import com.illposed.osc.OSCPortOut;
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
  
 	// TAG is used to debug in Android logcat console
-	private static final String TAG = "VoxPop ";
+	private static final String TAG = "VoxPopTag ";
 	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 	private static final String VOICE_MESSAGE_URL = "http://server/latest.mp3";
-	private static final String OSC_OUT_ADDRESS = "server.local";
+	private static final byte[] OSC_OUT_ADDRESS = {(byte)200,(byte)0,(byte)0,(byte)101};
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
@@ -66,6 +66,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	
 	private OSCPortIn mOscIn = null;
 	private OSCPortOut mOscOut = null;
+	private String oscOutAdressString = "";
+	private String smsMessageText = "";
+
 	OSCListener mOscListener = new OSCListener() {
 		public void acceptMessage(Date time, OSCMessage message) {
 			System.out.println("Message received!: "+message.getAddress()+" "+message.getArguments());
@@ -73,6 +76,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			String msg = (String)(message.getArguments().get(0));
 			byte pan = ((Byte)(message.getArguments().get(1))).byteValue();
 			byte tilt = ((Byte)(message.getArguments().get(2))).byteValue();
+			long delay = ((Long)(message.getArguments().get(3))).longValue();
+
+			Log.d(TAG, "OSC got : "+msg+"from BBB");
 
 			if(msg == VOICE_MESSAGE_STRING){
 				((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
@@ -112,24 +118,36 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				if (msgs.length > 0) {
 					// read only the most recent
 					msgs[0] = SmsMessage.createFromPdu((byte[]) pdus[0]);
-					String message = msgs[0].getMessageBody().toString();
+					smsMessageText = msgs[0].getMessageBody().toString();
 					String phoneNum = msgs[0].getOriginatingAddress().toString();
-					Log.d(TAG, "Client MainAction got sms: "+message);
+					Log.d(TAG, "Client MainAction got sms: "+smsMessageText);
 					Log.d(TAG, "from: "+phoneNum);
 
 					// only write if it's from a real number
 					if(phoneNum.length() > 5) {
 						// clean up the @/# if it's there...
-						message = message.replaceAll("[@#]?", "");
-						message = message.replaceAll("[():]+", "");
-						
+						smsMessageText = smsMessageText.replaceAll("[@#]?", "");
+						smsMessageText = smsMessageText.replaceAll("[():]+", "");
+
 						// send to server
-						OSCMessage oscMsg = new OSCMessage("/ffqmesms");
-						oscMsg.addArgument(new String(message));
-						try{
-							mOscOut.send(oscMsg);
-						}
-						catch(IOException e){}
+						Thread thread = new Thread(new Runnable(){
+						    @Override
+						    public void run() {
+								try{
+									OSCMessage oscMsg = new OSCMessage("/ffqmesms");
+									oscMsg.addArgument(smsMessageText);
+									mOscOut.send(oscMsg);
+								}
+								// TODO: open a new oscOut on error
+								catch(IOException e){
+									Log.d(TAG, "io");
+								}
+								catch(NullPointerException e){
+									Log.d(TAG, "null p");
+								}
+						    }
+						});
+						thread.start();
 					}
 				}
 			}
@@ -195,11 +213,27 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 		catch(SocketException e){}
 
+		Thread thread = new Thread(new Runnable(){
+		    @Override
+		    public void run() {
+		    	try {
+		    		InetAddress ina = InetAddress.getByAddress(OSC_OUT_ADDRESS);
+		    		mOscOut = (mOscOut == null)?(new OSCPortOut(ina,OSC_OUT_PORT)):mOscOut;
+		    		oscOutAdressString = ina.toString();
+		    	}
+		    	catch(SocketException e){}
+		    	catch(UnknownHostException e){}
+		    }
+		});
+		thread.start();
+
 		try{
-			mOscOut = (mOscOut == null)?(new OSCPortOut(InetAddress.getByName(OSC_OUT_ADDRESS),OSC_OUT_PORT)):mOscOut;
+			thread.join();
 		}
-		catch(SocketException e){}
-		catch(UnknownHostException e){}
+		catch(InterruptedException e){}
+		finally{
+			Log.d(TAG, "server address " + oscOutAdressString);
+		}
 
 		// for the pings
 		checkQueues();
@@ -212,6 +246,14 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onResume() {
 		super.onResume();
+
+		try{
+			mOscIn = (mOscIn == null)?(new OSCPortIn(OSC_IN_PORT)):mOscIn;
+			mOscIn.addListener("/ffqmevox", mOscListener);
+			mOscIn.startListening();
+		}
+		catch(SocketException e){}
+
 		if (mInputStream != null && mOutputStream != null) {
 			return;
 		}
@@ -239,6 +281,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onPause() {
 		super.onPause();
+		if(mOscIn != null) mOscIn.close();
 		closeAccessory();
 	}
  
@@ -272,18 +315,29 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				VoxPopuliActivity.this.checkQueues();
 			}
 		});
-
 		Log.d(TAG, "TTS ready! "+mTTS.getLanguage().toString());
 	}
 
 	private void checkQueues(){
 		// ping server
-		OSCMessage oscMsg = new OSCMessage("/ffqmeping");
-		oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
-		try{
-			mOscOut.send(oscMsg);
-		}
-		catch(IOException e){}
+		Thread thread = new Thread(new Runnable(){
+		    @Override
+		    public void run() {
+				try{
+					OSCMessage oscMsg = new OSCMessage("/ffqmeping");
+					oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
+					mOscOut.send(oscMsg);
+				}
+				// TODO: open a new oscOut on error
+				catch(IOException e){
+					Log.d(TAG, "io except");
+				}
+				catch(NullPointerException e){
+					Log.d(TAG, "null except");
+				}
+		    }
+		});
+		thread.start();
 
 		// if soing something, return
 		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying()){
