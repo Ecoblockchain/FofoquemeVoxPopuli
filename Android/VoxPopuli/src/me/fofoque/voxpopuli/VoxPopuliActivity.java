@@ -72,15 +72,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	OSCListener mOscListener = new OSCListener() {
 		public void acceptMessage(Date time, OSCMessage message) {
-			System.out.println("Message received!: "+message.getAddress()+" "+message.getArguments());
 			// read: msg, pan, tilt from osc
 			String msg = (String)(message.getArguments().get(0));
-			byte pan = ((Byte)(message.getArguments().get(1))).byteValue();
-			byte tilt = ((Byte)(message.getArguments().get(2))).byteValue();
-			long delay = ((Long)(message.getArguments().get(3))).longValue();
+			byte pan = (byte)((Integer)(message.getArguments().get(1))).intValue();
+			byte tilt = (byte)((Integer)(message.getArguments().get(2))).intValue();
+			int delay = ((Integer)(message.getArguments().get(3))).intValue();
 
-			Log.d(TAG, "OSC got : "+msg+"from BBB");
-
+			Log.d(TAG, "OSC got : "+msg+" "+pan+" "+tilt+" "+delay+" from BBB");
 			if(msg == VOICE_MESSAGE_STRING){
 				((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
 			}
@@ -139,13 +137,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 									oscMsg.addArgument(smsMessageText);
 									mOscOut.send(oscMsg);
 								}
-								// TODO: open a new oscOut on error
-								catch(IOException e){
-									Log.d(TAG, "io");
-								}
-								catch(NullPointerException e){
-									Log.d(TAG, "null p");
-								}
+								catch(IOException e){}
+								catch(NullPointerException e){}
 						    }
 						});
 						thread.start();
@@ -207,7 +200,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		});
 
 		// OSC
-		/*
 		try{
 			mOscIn = (mOscIn == null)?(new OSCPortIn(OSC_IN_PORT)):mOscIn;
 			mOscIn.addListener("/ffqmevox", mOscListener);
@@ -216,7 +208,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		catch(SocketException e){
 			Log.d(TAG, "socket");
 		}
-		*/
 
 		Thread thread = new Thread(new Runnable(){
 		    @Override
@@ -300,10 +291,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			    @Override
 			    public void run() {
 					try{
-						Log.d(TAG, "pingipngping");
-						OSCMessage oscMsg = new OSCMessage("/ffqmeping");
-						oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
-						mOscOut.send(oscMsg);
+						Log.d(TAG, "send ping and message");
+						OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
+						oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
+						mOscOut.send(oscPingMsg);
+						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
+						oscSmsMsg.addArgument("fala irm‹o");
+						mOscOut.send(oscSmsMsg);
 					}
 					catch(IOException e){}
 					catch(NullPointerException e){}
@@ -351,13 +345,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 					oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
 					mOscOut.send(oscMsg);
 				}
-				// TODO: open a new oscOut on error
-				catch(IOException e){
-					Log.d(TAG, "io except");
-				}
-				catch(NullPointerException e){
-					Log.d(TAG, "null except");
-				}
+				catch(IOException e){}
+				catch(NullPointerException e){}
 		    }
 		});
 		thread.start();
@@ -375,7 +364,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				try {
 					long startWaitMillis = System.currentTimeMillis();
 					mOutputStream.write(buffer);
-					mAudioPlayer.prepare();
 					while((mInputStream.available() < 1) && (System.currentTimeMillis() - startWaitMillis < 4000)){
 						Thread.sleep(100);
 					}
@@ -396,6 +384,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private void playMessage(String msg){
 		if(msg == VOICE_MESSAGE_STRING){
 			try{
+				mAudioPlayer.prepare();
 				mAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
 				mAudioPlayer.start();
 			}
