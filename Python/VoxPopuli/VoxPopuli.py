@@ -32,7 +32,6 @@ class RecordThread(Thread):
 
 def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
-	print addrTokens
 
 	if (addrTokens[0].lower() == "ffqmesms"):
 		ip = source[0]
@@ -118,7 +117,8 @@ def loop():
 				oscMsg = OSCMessage()
 				oscMsg.setAddress("/ffqmevox")
 				oscMsg.append(msg)
-				## TODO: pan and tilt
+				## TODO: pan and tilt and delay
+				oscMsg.append(0)
 				oscMsg.append(0)
 				oscMsg.append(0)
 				try:
