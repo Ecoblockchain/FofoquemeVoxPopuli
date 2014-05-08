@@ -7,13 +7,12 @@ from sys import exit
 from threading import Thread
 from subprocess import call
 from Queue import PriorityQueue
-from socket import gethostname
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
 import Adafruit_BBIO.GPIO as GPIO
 import alsaaudio
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-OSC_IN_ADDRESS = gethostname()+".local"
+OSC_IN_ADDRESS = "voxserver.local"
 OSC_IN_PORT = 8888
 LED_PIN = "P8_7"
 SWITCH_PIN = "P8_8"
@@ -33,6 +32,7 @@ class RecordThread(Thread):
 
 def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
+	print addrTokens
 
 	if (addrTokens[0].lower() == "ffqmesms"):
 		ip = getUrlStr(source).split(":")[0]
@@ -59,6 +59,7 @@ def setup():
 	oscIn.addMsgHandler('default', _oscHandler)
 	oscThread = Thread(target = oscIn.serve_forever)
 	oscThread.start()
+	print "osc in ready"
 
 	## setup gpio
 	GPIO.setup(SWITCH_PIN, GPIO.IN)
