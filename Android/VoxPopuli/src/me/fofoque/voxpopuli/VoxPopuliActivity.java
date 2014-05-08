@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.View;
+import android.view.MotionEvent;
 import android.widget.ToggleButton;
 
 import android.speech.tts.TextToSpeech;
@@ -206,12 +207,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		});
 
 		// OSC
+		/*
 		try{
 			mOscIn = (mOscIn == null)?(new OSCPortIn(OSC_IN_PORT)):mOscIn;
 			mOscIn.addListener("/ffqmevox", mOscListener);
 			mOscIn.startListening();
 		}
-		catch(SocketException e){}
+		catch(SocketException e){
+			Log.d(TAG, "socket");
+		}
+		*/
 
 		Thread thread = new Thread(new Runnable(){
 		    @Override
@@ -226,7 +231,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		    }
 		});
 		thread.start();
-
 		try{
 			thread.join();
 		}
@@ -246,13 +250,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onResume() {
 		super.onResume();
-
-		try{
-			mOscIn = (mOscIn == null)?(new OSCPortIn(OSC_IN_PORT)):mOscIn;
-			mOscIn.addListener("/ffqmevox", mOscListener);
-			mOscIn.startListening();
-		}
-		catch(SocketException e){}
 
 		if (mInputStream != null && mOutputStream != null) {
 			return;
@@ -281,7 +278,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onPause() {
 		super.onPause();
-		if(mOscIn != null) mOscIn.close();
 		closeAccessory();
 	}
  
@@ -294,6 +290,33 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		if(mOscIn != null) mOscIn.close();
 		if(mOscOut != null) mOscOut.close();
 		super.onDestroy();
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		if((event.getAction() == MotionEvent.ACTION_UP)){
+			// ping server
+			Thread thread = new Thread(new Runnable(){
+			    @Override
+			    public void run() {
+					try{
+						Log.d(TAG, "pingipngping");
+						OSCMessage oscMsg = new OSCMessage("/ffqmeping");
+						oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
+						mOscOut.send(oscMsg);
+					}
+					catch(IOException e){}
+					catch(NullPointerException e){}
+			    }
+			});
+			thread.start();
+			try{
+				thread.join();
+			}
+			catch(InterruptedException e) {}
+			return true;
+		}
+		return false;
 	}
 
 	// from OnInitListener interface
