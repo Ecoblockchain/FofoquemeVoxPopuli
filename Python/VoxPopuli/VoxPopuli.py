@@ -35,12 +35,15 @@ def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
 
 	if (addrTokens[0].lower() == "ffqmesms"):
-		messageQ.put((5, stuff[0].decode('utf-8')))
+		ip = getUrlStr(source).split(":")[0]
+		msg = stuff[0].decode('utf-8')
+		print "got %s from %s" % (msg,ip)
+		messageQ.put((5, msg))
 	elif (addrTokens[0].lower() == "ffqmeping"):
 		ip = getUrlStr(source).split(":")[0]
 		port = stuff[0]
 		print "got ping from %s %s" % (ip,port)
-		clientMap[(ip,port)] = time()
+		clientMap[(ip,int(port))] = time()
 
 def setup():
 	global currentButtonState, lastDownTime, isRecording, audioInput
@@ -118,7 +121,7 @@ def loop():
 				oscMsg.append(0)
 				try:
 					oscOut.connect((i,p))
-					oscOut.sendto(msg, (i,p))
+					oscOut.sendto(oscMsg, (i,p))
 					oscOut.connect((i,p))
 				except OSCClientError:
 					print "no connection to %s : %s, can't send message" % (i,p)
