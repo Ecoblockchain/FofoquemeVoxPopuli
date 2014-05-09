@@ -1,8 +1,7 @@
 package me.fofoque.voxpopuli;
  
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -12,9 +11,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.UUID;
 
 import android.app.Activity;
-import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,7 +24,6 @@ import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.View;
 import android.view.MotionEvent;
@@ -32,16 +33,12 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
 import android.telephony.SmsMessage;
 
-import android.hardware.usb.UsbAccessory;
-import android.hardware.usb.UsbManager;
-
 import com.illposed.osc.OSCMessage;
 import com.illposed.osc.OSCListener;
 import com.illposed.osc.OSCPortIn;
 import com.illposed.osc.OSCPortOut;
 
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
- 
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
 	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
@@ -49,18 +46,15 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final byte[] OSC_OUT_ADDRESS = {(byte)200,(byte)0,(byte)0,(byte)101};
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
-	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
+	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+	private static final String BLUETOOTH_ADDRESS = "00:06:66:45:16:6C";
 
-	private UsbManager mUsbManager;
-	private PendingIntent mPermissionIntent;
-	private boolean mPermissionRequestPending;
 	private ToggleButton buttonLED;
 
-	UsbAccessory mAccessory;
-	ParcelFileDescriptor mFileDescriptor;
-	FileInputStream mInputStream;
-	FileOutputStream mOutputStream;
- 
+	private BluetoothSocket myBTSocket = null;
+	InputStream mInputStream = null;
+	OutputStream mOutputStream = null;
+
 	private TextToSpeech mTTS = null;
 	private MediaPlayer mAudioPlayer = null;
 	private SMSReceiver mSMS = null;
@@ -148,42 +142,23 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
-	private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if (ACTION_USB_PERMISSION.equals(action)) {
-				synchronized (this) {
-					UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-						openAccessory(accessory);
-					} 
-					else {
-						Log.d(TAG, "permission denied for accessory " + accessory);
-					}
-					mPermissionRequestPending = false;
-				}
-			} 
-			else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-				UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-				if (accessory != null && accessory.equals(mAccessory)) {
-					closeAccessory();
-				}
-			}
-		}
-	};
-
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
  
-		// ADK USB FOO
-		mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
-		mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-		filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-		registerReceiver(mUsbReceiver, filter);
-		
+		// Bluetooth
+		// from : http://stackoverflow.com/questions/6565144/android-bluetooth-com-port
+		BluetoothAdapter myBTAdapter = BluetoothAdapter.getDefaultAdapter();
+		// this shouldn't happen...
+		if (!myBTAdapter.isEnabled()) {
+			//make sure the device's bluetooth is enabled
+			Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+			startActivityForResult(enableBluetooth, 12345);
+		}
+		else{
+			bluetoothInitHelper(myBTAdapter);
+		}
+
 		// FFQ
 		mTTS = (mTTS == null)?(new TextToSpeech(this, this)):mTTS;
 		mAudioPlayer = (mAudioPlayer == null)?(new MediaPlayer()):mAudioPlayer;
@@ -241,45 +216,34 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onResume() {
 		super.onResume();
+	}
 
-		if (mInputStream != null && mOutputStream != null) {
-			return;
-		}
-
-		UsbAccessory[] accessories = mUsbManager.getAccessoryList();
-		UsbAccessory accessory = (accessories == null ? null : accessories[0]);
-		if (accessory != null) {
-			if (mUsbManager.hasPermission(accessory)) {
-				openAccessory(accessory);
-			} 
-			else {
-				synchronized (mUsbReceiver) {
-					if (!mPermissionRequestPending) {
-						mUsbManager.requestPermission(accessory,mPermissionIntent);
-						mPermissionRequestPending = true;
-					}
-				}
-			}
-		}
-		else {
-			Log.d(TAG, "mAccessory is null");
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if ((requestCode == 12345) && (resultCode == RESULT_OK)) {
+				this.bluetoothInitHelper(BluetoothAdapter.getDefaultAdapter());
 		}
 	}
+
  
 	@Override
 	public void onPause() {
 		super.onPause();
-		closeAccessory();
 	}
  
 	@Override
 	public void onDestroy() {
-		unregisterReceiver(mUsbReceiver);
 		unregisterReceiver(mSMS);
 		if(mTTS != null) mTTS.shutdown();
 		if (mAudioPlayer != null) mAudioPlayer.release();
 		if(mOscIn != null) mOscIn.close();
 		if(mOscOut != null) mOscOut.close();
+		try{
+			if(mInputStream != null) mInputStream.close();
+			if(mOutputStream != null) mOutputStream.close();
+			if(myBTSocket != null) myBTSocket.close();
+		}
+		catch(IOException e){}
 		super.onDestroy();
 	}
 
@@ -335,6 +299,35 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		Log.d(TAG, "TTS ready! "+mTTS.getLanguage().toString());
 	}
 
+	private void bluetoothBondCheck(){
+		// get whether the BTDevice is bonded
+		if((myBTSocket != null) && (myBTSocket.getRemoteDevice() != null)){
+			// if the device is not bonded, try to bond again...
+			while(myBTSocket.getRemoteDevice().getBondState() == BluetoothDevice.BOND_NONE){
+				Log.d(TAG, "from sendSerialSignal: BTDevice not bonded, trying to re-bond");
+				bluetoothInitHelper(BluetoothAdapter.getDefaultAdapter());
+			}
+		}
+	}
+
+	private void bluetoothInitHelper(BluetoothAdapter myBTA){
+		Log.d(TAG, "From BT Helper");
+		// get a device
+		BluetoothDevice myBTDevice = myBTA.getRemoteDevice(BLUETOOTH_ADDRESS);
+		// get a socket and stream
+		try{
+			// if there's a non-null socket... disconnect
+			if(myBTSocket != null) myBTSocket.close();
+
+			// then (re)start the socket
+			myBTSocket = myBTDevice.createRfcommSocketToServiceRecord(SERIAL_UUID);
+			myBTSocket.connect();
+			mOutputStream = myBTSocket.getOutputStream();
+			mInputStream = myBTSocket.getInputStream();
+		}
+		catch(Exception e){}
+	}
+
 	private void checkQueues(){
 		// ping server
 		Thread thread = new Thread(new Runnable(){
@@ -362,6 +355,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			MotorMessage nextMessage = msgQueue.poll();
 			if (mOutputStream != null) {
 				Log.d(TAG, "there's arduino");
+				bluetoothBondCheck();
 				byte[] buffer = {(byte)0xff, (byte)0x93, (byte)nextMessage.pan, (byte)nextMessage.tilt};
 				try {
 					long startWaitMillis = System.currentTimeMillis();
@@ -406,33 +400,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
-	private void openAccessory(UsbAccessory accessory) {
-		mFileDescriptor = mUsbManager.openAccessory(accessory);
-		if (mFileDescriptor != null) {
-			mAccessory = accessory;
-			FileDescriptor fd = mFileDescriptor.getFileDescriptor();
-			mInputStream = new FileInputStream(fd);
-			mOutputStream = new FileOutputStream(fd);
-			Log.d(TAG, "accessory opened");
-		}
-		else {
-			Log.d(TAG, "accessory open fail");
-		}
-	}
-
-	private void closeAccessory() {
-		try {
-			if (mFileDescriptor != null) {
-				mFileDescriptor.close();
-			}
-		}
-		catch (IOException e) {}
-		finally {
-			mFileDescriptor = null;
-			mAccessory = null;
-		}
-	}
- 
 	public void blinkLED(View v){
  
 		byte[] buffer = {(byte)0xff, (byte)0x22, (byte)0x0, (byte)0x0};
