@@ -29,11 +29,15 @@ void onInterrupt(){
   }
 }
 
+
 USB Usb;
 ADK adk(&Usb, "Arduino", "ADK", "Description", "1.0", "http://fofoque.me", "0000000012345678");
 
 void setup() {
   Serial.begin(115200);
+  pinMode(13,OUTPUT);
+  digitalWrite(13,LOW);
+
   if (Usb.Init() == -1) {
     Serial.print("\r\nOSCOKIRQ failed to assert");
     while (1); // halt
@@ -59,21 +63,25 @@ void loop() {
       Serial.print(rcode, HEX);
     }
     else if (len > 3) {
-      Serial.print(F("\r\nData Packet: "));
+      Serial.print(F("\r\nGot Data Packet"));
       if((msg[0] == (byte)0xff) && (msg[1] == (byte)0x93)){
         panMotor.setTarget(msg[2]);
         tiltMotor.setTarget(msg[3]);
       }
+      else if((msg[0] == (byte)0xff) && (msg[1] == (byte)0x22)){
+        digitalWrite(13, msg[2] ? HIGH : LOW);
+      }
     }
   }
+
   panMotor.update();
   tiltMotor.update();
 
   if(!(panMotor.isDone() || tiltMotor.isDone())){
-      byte doneSignal = 0xf9;
-      uint8_t rcode = adk.SndData(sizeof(doneSignal), (uint8_t*)&doneSignal);
-      panMotor.goWait();
-      tiltMotor.goWait();
+    byte doneSignal = 0xf9;
+    uint8_t rcode = adk.SndData(sizeof(doneSignal), (uint8_t*)&doneSignal);
+    panMotor.goWait();
+    tiltMotor.goWait();
   }
 }
 
