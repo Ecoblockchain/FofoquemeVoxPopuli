@@ -14,8 +14,8 @@ import alsaaudio
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 OSC_IN_ADDRESS = "200.0.0.101"
 OSC_IN_PORT = 8888
-LED_PIN = 23
-SWITCH_PIN = 24
+LED_PIN = 7
+SWITCH_PIN = 8
 
 class RecordThread(Thread):
 	def __init__(self):
