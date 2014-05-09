@@ -2,25 +2,28 @@
 
 # to run: echo passwd | sudo python VoxPopuli.py
 
-from time import time, sleep
+from time import time, sleep, strftime, localtime
 from sys import exit
 from threading import Thread
 from subprocess import call
 from Queue import PriorityQueue
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SocketServer import TCPServer
 import RPi.GPIO as GPIO
 import alsaaudio
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 OSC_IN_ADDRESS = "200.0.0.101"
 OSC_IN_PORT = 8888
+HTTP_IN_PORT = 8666
 LED_PIN = 7
 SWITCH_PIN = 8
 
 class RecordThread(Thread):
 	def __init__(self):
 		super(RecordThread, self).__init__()
-		self.audioFile = open("foo.raw", 'wb')
+		self.audioFile = open("vox.raw", 'wb')
 
 	def run(self):
 		while(isRecording):
@@ -29,6 +32,21 @@ class RecordThread(Thread):
 				self.audioFile.write(data)
 				sleep(0.001)
 		self.audioFile.close()
+
+class ThreadedServer(Thread):
+	def __init__(self):
+		super(ThreadedServer, self).__init__()
+		self.keepServing = True
+
+	def run(self):
+		self.httpd = TCPServer(('', HTTP_IN_PORT), SimpleHTTPRequestHandler)
+		while(self.keepServing):
+			#httpd.serve_forever()
+			self.httpd.handle_request()
+		print "done serving"
+
+	def stop(self):
+		self.keepServing = False
 
 def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
@@ -59,6 +77,10 @@ def setup():
 	oscThread = Thread(target = oscIn.serve_forever)
 	oscThread.start()
 	print "osc in ready"
+
+	## setup audio server
+	mAudioServer = ThreadedServer()
+	mAudioServer.start()
 
 	## setup gpio
 	GPIO.setmode(GPIO.BCM)
@@ -98,7 +120,9 @@ def loop():
 			buttonJustGotPressed):
 			isRecording = False
 			audioThread.join()
-			call('lame -mm -r foo.raw foo.mp3', shell=True)
+			call('lame -mm -r vox.raw vox.mp3', shell=True)
+			call('cp vox.mp3 data/'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
+			call('rm -rf vox.raw', shell=True)
 			messageQ.put((1, VOICE_MESSAGE_STRING))
 	elif buttonJustGotPressed:
 			isRecording = (not audioInput is None)
@@ -143,4 +167,6 @@ if __name__=="__main__":
 	except KeyboardInterrupt:
 		oscIn.close()
 		oscThread.join()
+		mAudioServer.stop()
+		GPIO.cleanup()
 		exit(0)
