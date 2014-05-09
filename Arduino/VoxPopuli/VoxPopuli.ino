@@ -38,11 +38,6 @@ void setup() {
   pinMode(13,OUTPUT);
   digitalWrite(13,LOW);
 
-  if (Usb.Init() == -1) {
-    Serial.print("\r\nOSCOKIRQ failed to assert");
-    while (1); // halt
-  }
-  Serial.print("\r\nVox Populi Started");
   panMotor.setup(PAN_PWM0, PAN_PWM1, PAN_SWITCH0, PAN_SWITCH1);
   tiltMotor.setup(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
@@ -50,6 +45,12 @@ void setup() {
   PCintPort::attachInterrupt(PAN_SWITCH1, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH0, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH1, &onInterrupt, FALLING);
+
+  if (Usb.Init() == -1) {
+    Serial.print("\r\nOSCOKIRQ failed to assert");
+    while (1); // halt
+  }
+  Serial.print("\r\nVox Populi Started");
 }
 
 void loop() {
