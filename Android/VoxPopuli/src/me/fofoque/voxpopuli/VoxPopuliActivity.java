@@ -358,16 +358,20 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		// check queue for new messages
 		if(msgQueue.peek() != null){
+			Log.d(TAG, "there's msg");
 			MotorMessage nextMessage = msgQueue.poll();
 			if (mOutputStream != null) {
+				Log.d(TAG, "there's arduino");
 				byte[] buffer = {(byte)0xff, (byte)0x93, (byte)nextMessage.pan, (byte)nextMessage.tilt};
 				try {
 					long startWaitMillis = System.currentTimeMillis();
 					mOutputStream.write(buffer);
+					Log.d(TAG, "wrote to motors");
 					while((mInputStream.available() < 1) && (System.currentTimeMillis() - startWaitMillis < 4000)){
 						Thread.sleep(100);
 					}
 					if(mInputStream.read() == (byte)0xf9){
+						Log.d(TAG, "got response from arduino");
 						playMessage(nextMessage.msg);
 					}
 				} 
@@ -383,6 +387,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private void playMessage(String msg){
 		if(msg == VOICE_MESSAGE_STRING){
+			Log.d(TAG, "audio file type");
 			try{
 				mAudioPlayer.prepare();
 				mAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
@@ -393,6 +398,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			}
 		}
 		else{
+			Log.d(TAG, "TTS type");
 			HashMap<String,String> foo = new HashMap<String,String>();
 			foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
 			// pause before and afterwards.
@@ -429,12 +435,11 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
  
 	public void blinkLED(View v){
  
-		byte[] buffer = new byte[1];
- 
+		byte[] buffer = {(byte)0xff, (byte)0x22, (byte)0x0, (byte)0x0};
 		if(buttonLED.isChecked())
-			buffer[0]=(byte)1; // button says on, light is off
+			buffer[2] = (byte)0x1;
 		else
-			buffer[0]=(byte)0; // button says off, light is on
+			buffer[2] = (byte)0x0;
  
 		if (mOutputStream != null) {
 			try {
