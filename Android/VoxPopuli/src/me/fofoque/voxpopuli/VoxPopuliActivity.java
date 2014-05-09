@@ -42,8 +42,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
 	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-	private static final String VOICE_MESSAGE_URL = "http://200.0.0.101:8666/vox.mp3";
-	private static final byte[] OSC_OUT_ADDRESS = {(byte)200,(byte)0,(byte)0,(byte)101};
+	private static final String VOX_SERVER_ADDRESS = "192.168.2.117";// "200.0.0.101";
+	private static final String VOICE_MESSAGE_URL = "http://"+VOX_SERVER_ADDRESS+":8666/vox.mp3";
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -188,7 +188,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		    @Override
 		    public void run() {
 		    	try {
-		    		InetAddress ina = InetAddress.getByAddress(OSC_OUT_ADDRESS);
+		    		InetAddress ina = InetAddress.getByName(VOX_SERVER_ADDRESS);
 		    		mOscOut = (mOscOut == null)?(new OSCPortOut(ina,OSC_OUT_PORT)):mOscOut;
 		    		oscOutAdressString = ina.toString();
 		    	}
