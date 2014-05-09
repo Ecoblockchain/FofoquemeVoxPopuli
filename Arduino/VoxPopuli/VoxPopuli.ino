@@ -1,4 +1,3 @@
-#include <adk.h>
 #include <PinChangeInt.h>
 #include "VoxMotor.h"
 
@@ -30,55 +29,39 @@ void onInterrupt(){
   }
 }
 
-USB Usb;
-ADK adk(&Usb, "Arduino", "ADK", "Description", "1.0", "http://fofoque.me", "0000000012345678");
-
 void setup() {
+  Serial.begin(57600);
   pinMode(13,OUTPUT);
+  digitalWrite(13,LOW);
 
   PCintPort::attachInterrupt(PAN_SWITCH0, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(PAN_SWITCH1, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH0, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH1, &onInterrupt, FALLING);
 
-  Serial.begin(115200);
-  if (Usb.Init() == -1) {
-    Serial.print("\r\nOSCOKIRQ failed to assert");
-    while (1); // halt
-  }
   Serial.print("\r\nVox Populi Started");
-  digitalWrite(13,LOW);
-
 }
 
 void loop() {
-  Usb.Task();
-  if (adk.isReady()) {
-    uint8_t msg[4];
-    uint16_t len = sizeof(msg);
-    uint8_t rcode = adk.RcvData(&len, msg);
-    if (rcode && rcode != hrNAK) {
-      Serial.print(F("\r\nrcode rcv: "));
-      Serial.print(rcode, HEX);
+  if(Serial.available() > 3){
+    byte header[2];
+    header[0] = Serial.read();
+    header[1] = Serial.read();
+    if((header[0] == (byte)0xff) && (header[1] == (byte)0x93)){
+      panMotor.setTarget(Serial.read());
+      tiltMotor.setTarget(Serial.read());
     }
-    else if (len > 3) {
-      Serial.print(F("\r\nGot Data Packet"));
-      if((msg[0] == (byte)0xff) && (msg[1] == (byte)0x93)){
-        panMotor.setTarget(msg[2]);
-        tiltMotor.setTarget(msg[3]);
-      }
-      else if((msg[0] == (byte)0xff) && (msg[1] == (byte)0x22)){
-        digitalWrite(13, msg[2] ? HIGH : LOW);
-      }
+    else if((header[0] == (byte)0xff) && (header[1] == (byte)0x22)){
+      digitalWrite(13, Serial.read() ? HIGH : LOW);
+      Serial.read();
     }
   }
 
   panMotor.update();
   tiltMotor.update();
 
-  if(!(panMotor.isDone() || tiltMotor.isDone())){
-    byte doneSignal = 0xf9;
-    uint8_t rcode = adk.SndData(sizeof(doneSignal), (uint8_t*)&doneSignal);
+  if(panMotor.isDone() && tiltMotor.isDone()){
+    Serial.write(0xf9);
     panMotor.goWait();
     tiltMotor.goWait();
   }
