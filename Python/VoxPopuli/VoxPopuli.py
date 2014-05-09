@@ -64,7 +64,7 @@ def _oscHandler(addr, tags, stuff, source):
 
 def setup():
 	global currentButtonState, lastDownTime, isRecording, audioInput
-	global messageQ, clientMap, oscIn, oscOut, oscThread
+	global messageQ, clientMap, oscIn, oscOut, oscThread, mAudioServer
 	messageQ = PriorityQueue()
 	clientMap = {}
 
@@ -121,7 +121,7 @@ def loop():
 			isRecording = False
 			audioThread.join()
 			call('lame -mm -r vox.raw vox.mp3', shell=True)
-			call('cp vox.mp3 data/'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
+			call('cp vox.mp3 data/vox_'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
 			call('rm -rf vox.raw', shell=True)
 			messageQ.put((1, VOICE_MESSAGE_STRING))
 	elif buttonJustGotPressed:
