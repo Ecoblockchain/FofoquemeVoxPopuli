@@ -3,14 +3,7 @@
 
 #define PWM_MAX_DUTY 0.6
 
-VoxMotor::VoxMotor(){
-  pin[0] = pin[1] = 0;
-  limit[0] = limit[1] = 0;
-  currentDirection = 0;
-  currentDutyCycle = 0.0;
-}
-
-void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
+VoxMotor::VoxMotor(int motor0, int motor1, int switch0, int switch1){
   // assume pwm'ing pin[0] will trigger limit[0]
   pin[0] = motor0;
   pin[1] = motor1;
@@ -22,6 +15,8 @@ void VoxMotor::setup(int motor0, int motor1, int switch0, int switch1){
   pinMode(limit[0], INPUT_PULLUP);
   pinMode(limit[1], INPUT_PULLUP);
 
+  currentDirection = 0;
+  currentDutyCycle = 0.0;
   currentState = VoxMotor::WAIT;
   currentPosition = targetPosition = 0;
 }

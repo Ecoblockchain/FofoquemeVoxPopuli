@@ -13,8 +13,7 @@ class VoxMotor {
   byte targetPosition, currentPosition;
 
 public:
-  VoxMotor();
-  void setup(int motor0, int motor1, int switch0, int switch1);
+  VoxMotor(int motor0, int motor1, int switch0, int switch1);
   void stop();
   void update();
   boolean isDone();

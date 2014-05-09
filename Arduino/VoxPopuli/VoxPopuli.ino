@@ -18,7 +18,8 @@
 #define TILT_SWITCH0 A8
 #define TILT_SWITCH1 A9
 
-VoxMotor panMotor, tiltMotor;
+VoxMotor panMotor(PAN_PWM0, PAN_PWM1, PAN_SWITCH0, PAN_SWITCH1);
+VoxMotor tiltMotor(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
 void onInterrupt(){
   if((PCintPort::arduinoPin == PAN_SWITCH0) || (PCintPort::arduinoPin == PAN_SWITCH1)){
@@ -29,28 +30,25 @@ void onInterrupt(){
   }
 }
 
-
 USB Usb;
 ADK adk(&Usb, "Arduino", "ADK", "Description", "1.0", "http://fofoque.me", "0000000012345678");
 
 void setup() {
-  Serial.begin(115200);
   pinMode(13,OUTPUT);
-  digitalWrite(13,LOW);
-
-  panMotor.setup(PAN_PWM0, PAN_PWM1, PAN_SWITCH0, PAN_SWITCH1);
-  tiltMotor.setup(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
   PCintPort::attachInterrupt(PAN_SWITCH0, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(PAN_SWITCH1, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH0, &onInterrupt, FALLING);
   PCintPort::attachInterrupt(TILT_SWITCH1, &onInterrupt, FALLING);
 
+  Serial.begin(115200);
   if (Usb.Init() == -1) {
     Serial.print("\r\nOSCOKIRQ failed to assert");
     while (1); // halt
   }
   Serial.print("\r\nVox Populi Started");
+  digitalWrite(13,LOW);
+
 }
 
 void loop() {
