@@ -262,6 +262,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
 						oscSmsMsg.addArgument("fala irm‹o");
 						mOscOut.send(oscSmsMsg);
+						OSCMessage oscVoxMsg = new OSCMessage("/ffqmesms");
+						oscVoxMsg.addArgument(VOICE_MESSAGE_STRING);
+						mOscOut.send(oscVoxMsg);
 					}
 					catch(IOException e){}
 					catch(NullPointerException e){}
@@ -368,7 +371,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						Log.d(TAG, "got response from arduino");
 						playMessage(nextMessage.msg);
 					}
-				} 
+				}
 				catch (IOException e) {
 					Log.e(TAG, "read or write failed", e);
 				}
@@ -376,11 +379,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 					Log.e(TAG, "thread sleep failed", e);
 				}
 			}
+			// DEBUG
+			else{
+				Log.d(TAG, "debug playing message anyway");
+				playMessage(nextMessage.msg);
+			}
 		}
 	}
 
 	private void playMessage(String msg){
-		if(msg == VOICE_MESSAGE_STRING){
+		if(msg.equals(VOICE_MESSAGE_STRING)){
 			Log.d(TAG, "audio file type");
 			try{
 				mAudioPlayer.prepare();
