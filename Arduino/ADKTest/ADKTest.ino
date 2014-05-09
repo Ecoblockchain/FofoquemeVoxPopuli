@@ -19,17 +19,19 @@ void loop() {
   Usb.Task();
 
   if (adk.isReady()) {
-    uint8_t msg[1];
+    uint8_t msg[4];
     uint16_t len = sizeof(msg);
     uint8_t rcode = adk.RcvData(&len, msg);
     if (rcode && rcode != hrNAK) {
       Serial.print(F("\r\nData rcv: "));
       Serial.print(rcode, HEX);
     }
-    else if (len > 0) {
+    else if (len > 3) {
       Serial.print(F("\r\nData Packet: "));
-      Serial.print(msg[0]);
-      digitalWrite(LED, msg[0] ? HIGH : LOW);
+       Serial.print(msg[0]);
+      if((msg[0] == (byte)0xff) && (msg[1] == (byte)0x22)){
+        digitalWrite(LED, msg[2] ? HIGH : LOW);
+      }
     }
   }
 }
