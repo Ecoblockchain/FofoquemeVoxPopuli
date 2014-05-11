@@ -21,8 +21,9 @@ VoxMotor::VoxMotor(int motor0, int motor1, int switch0, int switch1){
   currentPosition = targetPosition = 0;
 }
 
-void VoxMotor::stop() {
+void VoxMotor::stopAndChangeDirection() {
   analogWrite(pin[currentDirection], 255);
+  currentDirection = (currentDirection+1)%2;
 }
 
 boolean VoxMotor::isDone() {
@@ -50,11 +51,6 @@ void VoxMotor::setTarget(byte t) {
 }
 
 void VoxMotor::update() {
-  // deal with direction
-  if((digitalRead(limit[0]) == LOW) || (digitalRead(limit[1]) == LOW)){
-    currentDirection = (currentDirection+1)%2;
-  }
-
   if((currentState == DONE) || (currentState == WAIT)){
     currentDutyCycle = 0.0;
     analogWrite(pin[0], 255);

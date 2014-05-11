@@ -14,7 +14,7 @@ class VoxMotor {
 
 public:
   VoxMotor(int motor0, int motor1, int switch0, int switch1);
-  void stop();
+  void stopAndChangeDirection();
   void update();
   boolean isDone();
   void goWait();

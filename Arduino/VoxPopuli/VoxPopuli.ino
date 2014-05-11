@@ -22,10 +22,10 @@ VoxMotor tiltMotor(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
 void onInterrupt(){
   if((PCintPort::arduinoPin == PAN_SWITCH0) || (PCintPort::arduinoPin == PAN_SWITCH1)){
-    panMotor.stop();
+    panMotor.stopAndChangeDirection();
   }
   else if((PCintPort::arduinoPin == TILT_SWITCH0) || (PCintPort::arduinoPin == TILT_SWITCH1)){
-    tiltMotor.stop();
+    tiltMotor.stopAndChangeDirection();
   }
 }
 
