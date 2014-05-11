@@ -84,7 +84,7 @@ def setup():
 
 	## setup gpio
 	GPIO.setmode(GPIO.BCM)
-	GPIO.setup(SWITCH_PIN, GPIO.IN)
+	GPIO.setup(SWITCH_PIN, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 	GPIO.setup(LED_PIN, GPIO.OUT)
 	GPIO.output(LED_PIN, GPIO.LOW)
 	currentButtonState = GPIO.input(SWITCH_PIN)
