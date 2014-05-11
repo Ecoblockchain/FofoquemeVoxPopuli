@@ -165,14 +165,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
 		registerReceiver(mSMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
-		mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-		mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-				mp.stop();
-				VoxPopuliActivity.this.checkQueues();
-			}
-		});
 
 		// OSC
 		try{
@@ -347,7 +339,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		});
 		thread.start();
 
-		// if soing something, return
+		// if already doing something, return
 		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying()){
 			return;
 		}
@@ -391,9 +383,25 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		if(msg.equals(VOICE_MESSAGE_STRING)){
 			Log.d(TAG, "audio file type");
 			try{
-				mAudioPlayer.prepare();
+				if(mAudioPlayer != null) mAudioPlayer.release();
+				mAudioPlayer = new MediaPlayer();
+				mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 				mAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
-				mAudioPlayer.start();
+				mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+					@Override
+					public void onCompletion(MediaPlayer mp) {
+						Log.d(TAG, "from media completion");
+						VoxPopuliActivity.this.checkQueues();
+					}
+				});
+				mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {					
+					@Override
+					public void onPrepared(MediaPlayer mp) {
+						Log.d(TAG, "from media prepared");
+						mp.start();
+					}
+				});
+				mAudioPlayer.prepareAsync();
 			}
 			catch(IOException e){
 				Log.e(TAG, "failed to open stream", e);
