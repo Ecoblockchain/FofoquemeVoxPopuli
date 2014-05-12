@@ -118,6 +118,7 @@ def loop():
 			(buttonJustGotReleased and (time()-lastDownTime > 1.0)) or
 			buttonJustGotPressed):
 			isRecording = False
+			GPIO.output(LED_PIN, GPIO.LOW)
 			audioThread.join()
 			call('lame -mm -r vox.raw vox.mp3', shell=True)
 			call('cp vox.mp3 data/vox_'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
@@ -125,10 +126,9 @@ def loop():
 			messageQ.put((1, VOICE_MESSAGE_STRING))
 	elif buttonJustGotPressed:
 			isRecording = (not audioInput is None)
+			GPIO.output(LED_PIN, GPIO.HIGH)
 			audioThread = RecordThread()
 			audioThread.start()
-
-	GPIO.output(LED_PIN, GPIO.HIGH if isRecording else GPIO.LOW)
 
 	## deal with messages
 	if(not messageQ.empty()):
