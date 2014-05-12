@@ -36,17 +36,16 @@ class RecordThread(Thread):
 class ThreadedServer(Thread):
 	def __init__(self):
 		super(ThreadedServer, self).__init__()
-		self.keepServing = True
+		self.httpd = TCPServer(('', HTTP_IN_PORT), SimpleHTTPRequestHandler)
+		self.httpd.allow_reuse_address = True
 
 	def run(self):
-		self.httpd = TCPServer(('', HTTP_IN_PORT), SimpleHTTPRequestHandler)
-		while(self.keepServing):
-			#httpd.serve_forever()
-			self.httpd.handle_request()
+		self.httpd.serve_forever(poll_interval=0.5)
 		print "done serving"
 
 	def stop(self):
-		self.keepServing = False
+		self.httpd.shutdown()
+		self.httpd.socket.close()
 
 def _oscHandler(addr, tags, stuff, source):
 	addrTokens = addr.lstrip('/').split('/')
@@ -168,5 +167,6 @@ if __name__=="__main__":
 		oscIn.close()
 		oscThread.join()
 		mAudioServer.stop()
+		mAudioServer.join()
 		GPIO.cleanup()
 		exit(0)
