@@ -36,8 +36,8 @@ class RecordThread(Thread):
 class ThreadedServer(Thread):
 	def __init__(self):
 		super(ThreadedServer, self).__init__()
+		TCPServer.allow_reuse_address = True
 		self.httpd = TCPServer(('', HTTP_IN_PORT), SimpleHTTPRequestHandler)
-		self.httpd.allow_reuse_address = True
 
 	def run(self):
 		self.httpd.serve_forever(poll_interval=0.5)
