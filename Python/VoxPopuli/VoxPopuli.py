@@ -62,6 +62,7 @@ def _oscHandler(addr, tags, stuff, source):
 		clientMap[(ip,int(port))] = time()
 
 def setup():
+	print "setup"
 	global currentButtonState, lastDownTime, isRecording, audioInput
 	global messageQ, clientMap, oscIn, oscOut, oscThread, mAudioServer
 	messageQ = PriorityQueue()
@@ -151,22 +152,27 @@ def loop():
 				except OSCClientError:
 					print "no connection to %s : %s, can't send message" % (i,p)
 
+def cleanUp():
+	oscIn.close()
+	oscThread.join()
+	mAudioServer.stop()
+	mAudioServer.join()
+	GPIO.cleanup()
+
 if __name__=="__main__":
 	setup()
 
-	try:
-		while(True):
+	while(True):
+		try:
 			## keep it from looping faster than ~60 times per second
 			loopStart = time()
 			loop()
 			loopTime = time()-loopStart
 			if (loopTime < 0.016):
 				sleep(0.016 - loopTime)
-		exit(0)
-	except KeyboardInterrupt:
-		oscIn.close()
-		oscThread.join()
-		mAudioServer.stop()
-		mAudioServer.join()
-		GPIO.cleanup()
-		exit(0)
+		except KeyboardInterrupt:
+			cleanUp()
+			exit(0)
+		except:
+			cleanUp()
+			setup()
