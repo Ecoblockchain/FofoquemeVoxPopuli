@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # to run: echo passwd | sudo python VoxPopuli.py
+# to listen to mp3: mplayer -ao alsa:device=default=Headset vox.mp3
 
 from time import time, sleep, strftime, localtime
 from sys import exit
@@ -121,6 +122,7 @@ def loop():
 			isRecording = False
 			GPIO.output(LED_PIN, GPIO.LOW)
 			audioThread.join()
+			call('rm -rf vox.mp3', shell=True)
 			call('lame -mm -r vox.raw vox.mp3', shell=True)
 			call('cp vox.mp3 data/vox_'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
 			call('rm -rf vox.raw', shell=True)
