@@ -62,6 +62,20 @@ def _oscHandler(addr, tags, stuff, source):
 		print "got ping from %s %s" % (ip,port)
 		clientMap[(ip,int(port))] = time()
 
+def _setupAudio():
+	global audioInput
+	audioInput = None
+
+	try:
+		audioInput = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, "default:Headset")
+		audioInput.setchannels(1)
+		audioInput.setrate(44100)
+		audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+		audioInput.setperiodsize(256)
+	except:
+		print "couldn't start audio device"
+		audioInput = None
+
 def setup():
 	print "setup"
 	global currentButtonState, lastDownTime, isRecording, audioInput
@@ -92,17 +106,7 @@ def setup():
 	lastDownTime = 0
 	isRecording = False
 
-	## setup audio
-	audioInput = None
-	try:
-		audioInput = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, "default:Headset")
-		audioInput.setchannels(1)
-		audioInput.setrate(44100)
-		audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-		audioInput.setperiodsize(256)
-	except:
-		print "couldn't start audio device"
-		audioInput = None
+	_setupAudio()
 
 def loop():
 	global messageQ, clientMap, oscOut, currentButtonState, lastDownTime, isRecording, audioThread
