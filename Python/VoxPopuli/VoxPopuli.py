@@ -130,6 +130,7 @@ def loop():
 			call('lame -mm -r vox.raw vox.mp3', shell=True)
 			call('cp vox.mp3 data/vox_'+strftime("%Y%m%d_%H%M%S", localtime())+'.mp3', shell=True)
 			call('rm -rf vox.raw', shell=True)
+			_setupAudio()
 			messageQ.put((1, VOICE_MESSAGE_STRING))
 	elif buttonJustGotPressed:
 			isRecording = (not audioInput is None)
