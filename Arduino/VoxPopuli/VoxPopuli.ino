@@ -1,11 +1,6 @@
-#include <PinChangeInt.h>
 #include "VoxMotor.h"
 
-#define NO_PORTB_PINCHANGES
-#define NO_PORTC_PINCHANGES
-#define NO_PORTD_PINCHANGES
-#define NO_PORTJ_PINCHANGES
-#define NO_PIN_STATE
+#define DEBUG 1
 
 #define PAN_PWM0 2
 #define PAN_PWM1 3
@@ -20,24 +15,10 @@
 VoxMotor panMotor(PAN_PWM0, PAN_PWM1, PAN_SWITCH0, PAN_SWITCH1);
 VoxMotor tiltMotor(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
-void onInterrupt(){
-  if((PCintPort::arduinoPin == PAN_SWITCH0) || (PCintPort::arduinoPin == PAN_SWITCH1)){
-    panMotor.stopAndChangeDirection();
-  }
-  else if((PCintPort::arduinoPin == TILT_SWITCH0) || (PCintPort::arduinoPin == TILT_SWITCH1)){
-    tiltMotor.stopAndChangeDirection();
-  }
-}
-
 void setup() {
   Serial.begin(57600);
   pinMode(13,OUTPUT);
   digitalWrite(13,LOW);
-
-  PCintPort::attachInterrupt(PAN_SWITCH0, &onInterrupt, FALLING);
-  PCintPort::attachInterrupt(PAN_SWITCH1, &onInterrupt, FALLING);
-  PCintPort::attachInterrupt(TILT_SWITCH0, &onInterrupt, FALLING);
-  PCintPort::attachInterrupt(TILT_SWITCH1, &onInterrupt, FALLING);
 
   Serial.print("\r\nVox Populi Started");
 }
@@ -64,6 +45,8 @@ void loop() {
     Serial.write(0xf9);
     panMotor.goWait();
     tiltMotor.goWait();
+    panMotor.setTarget(255);
+    tiltMotor.setTarget(255);
   }
 }
 

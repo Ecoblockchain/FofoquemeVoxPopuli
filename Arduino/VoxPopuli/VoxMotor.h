@@ -1,4 +1,5 @@
 #pragma once
+#include "Arduino.h"
 
 class VoxMotor {
   enum StateType { 
@@ -10,7 +11,6 @@ class VoxMotor {
   unsigned long changeStateMillis;
   unsigned long rampDurationMillis;
   StateType currentState;
-  byte targetPosition, currentPosition;
 
 public:
   VoxMotor(int motor0, int motor1, int switch0, int switch1);
@@ -18,6 +18,6 @@ public:
   void update();
   boolean isDone();
   void goWait();
-  void setTarget(byte t);
+  void setTarget(uint8_t t);
 };
 
