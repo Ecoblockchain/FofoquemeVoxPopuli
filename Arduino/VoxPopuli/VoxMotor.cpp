@@ -16,7 +16,9 @@ VoxMotor::VoxMotor(int motor0, int motor1, int switch0, int switch1){
 
   currentDirection = 0;
   currentDutyCycle = 0.0;
-  currentState = DONE;
+  currentState = WAIT;
+
+  moveDurationMillis = lastStateChangeMillis = millis();
 
   if(digitalRead(limit[0]) == LOW){
     currentDirection = 1;
@@ -36,32 +38,48 @@ void VoxMotor::setTarget(uint8_t t) {
   }
 
   currentDutyCycle = 0.0;
-  rampDurationMillis = 2000; //map(abs(targetPosition - currentPosition), 0,255, 1000, 2000);
-  changeStateMillis = millis()+rampDurationMillis;
-  currentState = SPEED_UP;
+  moveDurationMillis = 2000; //map(abs(targetPosition - currentPosition), 0,255, 1000, 2000);
+  lastStateChangeMillis = millis();
+  currentState = MOVE_FORWARD;
 }
 
 void VoxMotor::update() {
-  if(digitalRead(limit[0]) == LOW){
-    currentDirection = 1;
-  }
-  if(digitalRead(limit[1]) == LOW){
-    currentDirection = 0;
+  // limit switch logic
+  if((digitalRead(limit[0]) == LOW) || (digitalRead(limit[1]) == LOW)){
+    currentDutyCycle = 0.0;
+    currentState = MOVE_BACK;
+    if(digitalRead(limit[0]) == LOW){
+      currentDirection = 1;
+    }
+    else{
+      currentDirection = 0;
+    }
   }
 
   if((currentState == DONE) || (currentState == WAIT)){
     currentDutyCycle = 0.0;
   }
-  if(currentState == SPEED_UP){
-    currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
-    if(millis() > changeStateMillis){
-      changeStateMillis = millis()+rampDurationMillis;
-      currentState = SPEED_DOWN;
+  if(currentState == MOVE_FORWARD){
+    // duty cycle logic
+    if(millis()-lastStateChangeMillis < 0.25*moveDurationMillis){
+      currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
+    }
+    else if(millis()-lastStateChangeMillis > 0.75*moveDurationMillis){
+      currentDutyCycle -= (currentDutyCycle>0.1)?0.1:0;
+    }
+
+    // next state logic
+    if(millis()-lastStateChangeMillis > moveDurationMillis){
+      currentState = DONE;
     }
   }
-  if(currentState == SPEED_DOWN){
-    currentDutyCycle -= (currentDutyCycle>0.1)?0.1:0;
-    if(millis() > changeStateMillis){
+  if(currentState == MOVE_BACK){
+    // duty cycle logic: only speeds up
+    currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
+
+    // next state logic
+    if((digitalRead(limit[0]) == HIGH) && (digitalRead(limit[1]) == HIGH)){
+      currentDutyCycle = 0.0;
       currentState = DONE;
     }
   }

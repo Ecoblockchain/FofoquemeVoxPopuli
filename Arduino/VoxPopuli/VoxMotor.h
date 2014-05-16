@@ -3,13 +3,13 @@
 
 class VoxMotor {
   enum StateType { 
-    WAIT, SPEED_UP, SPEED_DOWN, DONE };
+    WAIT, MOVE_FORWARD, MOVE_BACK, DONE };
   int pin[2];
   int limit[2];
   short currentDirection;
   float currentDutyCycle;
-  unsigned long changeStateMillis;
-  unsigned long rampDurationMillis;
+  unsigned long moveDurationMillis;
+  unsigned long lastStateChangeMillis;
   StateType currentState;
 
 public:
