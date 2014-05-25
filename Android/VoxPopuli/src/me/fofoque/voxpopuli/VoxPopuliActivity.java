@@ -3,7 +3,6 @@ package me.fofoque.voxpopuli;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -14,7 +13,6 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.UUID;
 
-import android.R.bool;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -25,6 +23,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -49,10 +48,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:DA";
-	//private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:BF";
-	//private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:CB";
-	//private static final String BLUETOOTH_ADDRESS = "00:06:66:45:16:6C";
+	private static final String BLUETOOTH_ADDRESS = Build.SERIAL.equals("11ec8d43")?"98:76:B6:00:1C:CB":
+		Build.SERIAL.equals("11ec8d42")?"98:76:B6:00:1C:BF":"98:76:B6:00:1C:DA";
 
 	private ToggleButton buttonLED;
 
@@ -151,6 +148,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d(TAG, "Serial: "+Build.SERIAL);
+		Log.d(TAG, "BT Address: "+BLUETOOTH_ADDRESS);
  
 		// Bluetooth
 		// from : http://stackoverflow.com/questions/6565144/android-bluetooth-com-port
@@ -179,7 +178,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			mOscIn.startListening();
 		}
 		catch(SocketException e){
-			Log.d(TAG, "socket");
+			Log.e(TAG, "socket exception in onCreate");
 		}
 
 		Thread thread = new Thread(new Runnable(){
