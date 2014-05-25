@@ -55,8 +55,6 @@ void loop() {
     Serial1.flush();
     panMotor.goWait();
     tiltMotor.goWait();
-    //panMotor.setTarget(255);
-    //tiltMotor.setTarget(255);
   }
 }
 
