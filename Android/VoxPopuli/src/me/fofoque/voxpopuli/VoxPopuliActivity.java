@@ -265,7 +265,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						oscVoxMsg.addArgument(VOICE_MESSAGE_STRING);
 						mOscOut.send(oscVoxMsg);
 						*/
-						msgQueue.offer(new MotorMessage("hello", (byte)0xff, (byte)0xff));
+						msgQueue.offer(new MotorMessage("aê rapaz!", (byte)0xff, (byte)0xff));
 					}
 					//catch(IOException e){}
 					catch(NullPointerException e){}
@@ -382,9 +382,12 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 								Thread.sleep(100);
 							}
 							isWaitingForMotor = false;
-							// TODO: maybe play it anyway...
 							if((mInputStream.read() == 'G') && (mInputStream.read() == 'O')){
-								Log.d(TAG, "got response from arduino (or timeout)");
+								Log.d(TAG, "got response from arduino");
+								playMessage(nextMessage.msg);
+							}
+							else{
+								Log.d(TAG, "got timeout");
 								playMessage(nextMessage.msg);
 							}
 						}
@@ -396,11 +399,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				    }
 				});
 				motorThread.start();
-			}
-			// TODO: remove this DEBUG
-			else{
-				Log.d(TAG, "debug playing message anyway");
-				playMessage(nextMessage.msg);
 			}
 		}
 	}
