@@ -17,6 +17,7 @@ VoxMotor tiltMotor(TILT_PWM0, TILT_PWM1, TILT_SWITCH0, TILT_SWITCH1);
 
 void setup() {
   Serial.begin(57600);
+  Serial1.begin(9600);
   pinMode(13,OUTPUT);
   digitalWrite(13,LOW);
 
@@ -24,29 +25,38 @@ void setup() {
 }
 
 void loop() {
-  if(Serial.available() > 3){
-    byte header[2];
-    header[0] = Serial.read();
-    header[1] = Serial.read();
-    if((header[0] == (byte)0xff) && (header[1] == (byte)0x93)){
-      panMotor.setTarget(Serial.read());
-      tiltMotor.setTarget(Serial.read());
+  if(Serial1.available() > 3){
+    int header[2];
+    header[0] = Serial1.read() & 0xff;
+    header[1] = Serial1.read() & 0xff;
+    if((header[0] == 'F') && (header[1] == 'Q')){
+      panMotor.setTarget(Serial1.read());
+      tiltMotor.setTarget(Serial1.read());
     }
-    else if((header[0] == (byte)0xff) && (header[1] == (byte)0x22)){
-      digitalWrite(13, Serial.read() ? HIGH : LOW);
-      Serial.read();
+    else if((header[0] == 'L') && (header[1] == 'E')){
+      Serial1.read();
+      digitalWrite(13, Serial1.read() ? HIGH : LOW);
     }
+    else{
+      Serial.print("got: ");
+      Serial.print(header[0]);
+      Serial.print(" and ");
+      Serial.println(header[1]);
+    }
+    while(Serial1.available()) Serial1.read();
   }
 
   panMotor.update();
   tiltMotor.update();
 
   if(panMotor.isDone() && tiltMotor.isDone()){
-    Serial.write(0xf9);
+    Serial1.write('G');
+    Serial1.write('O');
+    Serial1.flush();
     panMotor.goWait();
     tiltMotor.goWait();
-    panMotor.setTarget(255);
-    tiltMotor.setTarget(255);
+    //panMotor.setTarget(255);
+    //tiltMotor.setTarget(255);
   }
 }
 

@@ -3,6 +3,7 @@ package me.fofoque.voxpopuli;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -13,6 +14,7 @@ import java.util.Locale;
 import java.util.Queue;
 import java.util.UUID;
 
+import android.R.bool;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -47,13 +49,17 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	private static final String BLUETOOTH_ADDRESS = "00:06:66:45:16:6C";
+	private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:DA";
+	//private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:BF";
+	//private static final String BLUETOOTH_ADDRESS = "98:76:B6:00:1C:CB";
+	//private static final String BLUETOOTH_ADDRESS = "00:06:66:45:16:6C";
 
 	private ToggleButton buttonLED;
 
 	private BluetoothSocket myBTSocket = null;
-	InputStream mInputStream = null;
-	OutputStream mOutputStream = null;
+	private InputStream mInputStream = null;
+	private OutputStream mOutputStream = null;
+	private boolean isWaitingForMotor = false;
 
 	private TextToSpeech mTTS = null;
 	private MediaPlayer mAudioPlayer = null;
@@ -247,6 +253,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			    @Override
 			    public void run() {
 					try{
+						/*
 						Log.d(TAG, "send ping and message");
 						OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
 						oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
@@ -257,8 +264,10 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						OSCMessage oscVoxMsg = new OSCMessage("/ffqmesms");
 						oscVoxMsg.addArgument(VOICE_MESSAGE_STRING);
 						mOscOut.send(oscVoxMsg);
+						*/
+						msgQueue.offer(new MotorMessage("hello", (byte)0xff, (byte)0xff));
 					}
-					catch(IOException e){}
+					//catch(IOException e){}
 					catch(NullPointerException e){}
 			    }
 			});
@@ -267,6 +276,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				thread.join();
 			}
 			catch(InterruptedException e) {}
+			checkQueues();
 			return true;
 		}
 		return false;
@@ -320,12 +330,20 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			mOutputStream = myBTSocket.getOutputStream();
 			mInputStream = myBTSocket.getInputStream();
 		}
-		catch(Exception e){}
+		catch(Exception e){
+			Log.e(TAG, "Couldn't open streams !!?");
+			Log.e(TAG, e.toString());
+		}
+
+		// check BT streams
+		if(mOutputStream != null && mInputStream != null){
+			Log.d(TAG, "BT Helper Stream init was successful");
+		}
 	}
 
 	private void checkQueues(){
 		// ping server
-		Thread thread = new Thread(new Runnable(){
+		Thread oscThread = new Thread(new Runnable(){
 		    @Override
 		    public void run() {
 				try{
@@ -337,41 +355,49 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				catch(NullPointerException e){}
 		    }
 		});
-		thread.start();
+		oscThread.start();
 
 		// if already doing something, return
-		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying()){
+		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying() || isWaitingForMotor){
 			return;
 		}
 
 		// check queue for new messages
 		if(msgQueue.peek() != null){
 			Log.d(TAG, "there's msg");
-			MotorMessage nextMessage = msgQueue.poll();
+			final MotorMessage nextMessage = msgQueue.poll();
 			if (mOutputStream != null) {
 				Log.d(TAG, "there's arduino");
 				bluetoothBondCheck();
-				byte[] buffer = {(byte)0xff, (byte)0x93, (byte)nextMessage.pan, (byte)nextMessage.tilt};
-				try {
-					long startWaitMillis = System.currentTimeMillis();
-					mOutputStream.write(buffer);
-					Log.d(TAG, "wrote to motors");
-					while((mInputStream.available() < 1) && (System.currentTimeMillis() - startWaitMillis < 4000)){
-						Thread.sleep(100);
-					}
-					if(mInputStream.read() == (byte)0xf9){
-						Log.d(TAG, "got response from arduino");
-						playMessage(nextMessage.msg);
-					}
-				}
-				catch (IOException e) {
-					Log.e(TAG, "read or write failed", e);
-				}
-				catch(InterruptedException e){
-					Log.e(TAG, "thread sleep failed", e);
-				}
+				Thread motorThread = new Thread(new Runnable(){
+				    @Override
+				    public void run() {
+				    	byte[] buffer = {'F', 'Q', nextMessage.pan, nextMessage.tilt};
+						try{
+							long startWaitMillis = System.currentTimeMillis();
+							isWaitingForMotor = true;
+							mOutputStream.write(buffer);
+							Log.d(TAG, "wrote to motors");
+							while((mInputStream.available() < 2) && (System.currentTimeMillis() - startWaitMillis < 4000)){
+								Thread.sleep(100);
+							}
+							isWaitingForMotor = false;
+							// TODO: maybe play it anyway...
+							if((mInputStream.read() == 'G') && (mInputStream.read() == 'O')){
+								Log.d(TAG, "got response from arduino (or timeout)");
+								playMessage(nextMessage.msg);
+							}
+						}
+						catch(IOException e){
+							Log.e(TAG, "read or write failed", e);
+						}
+						catch(NullPointerException e){}
+						catch(InterruptedException e){}
+				    }
+				});
+				motorThread.start();
 			}
-			// DEBUG
+			// TODO: remove this DEBUG
 			else{
 				Log.d(TAG, "debug playing message anyway");
 				playMessage(nextMessage.msg);
@@ -417,17 +443,20 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	}
 
 	public void blinkLED(View v){
- 
-		byte[] buffer = {(byte)0xff, (byte)0x22, (byte)0x0, (byte)0x0};
-		if(buttonLED.isChecked())
-			buffer[2] = (byte)0x1;
-		else
-			buffer[2] = (byte)0x0;
+		byte[] buffer = {'L', 'E', 'D', 0x0};
+		if(buttonLED.isChecked()){
+			buffer[3] = 0x1;
+		}
+		else{
+			buffer[3] = 0x0;
+		}
  
 		if (mOutputStream != null) {
+			Log.d(TAG, "stream not null. sending button message");
 			try {
 				mOutputStream.write(buffer);
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				Log.e(TAG, "write failed", e);
 			}
 		}
