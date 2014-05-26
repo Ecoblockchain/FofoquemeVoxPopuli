@@ -15,7 +15,7 @@ import RPi.GPIO as GPIO
 import alsaaudio
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-OSC_IN_ADDRESS = "192.168.2.117" #"200.0.0.101"
+OSC_IN_ADDRESS = "200.0.0.101"
 OSC_IN_PORT = 8888
 HTTP_IN_PORT = 8666
 LED_PIN = 7
@@ -144,20 +144,20 @@ def loop():
 		# TODO nltk
 		msg = messageQ.get()[1]
 		for (i,p) in clientMap:
-			if(time()-clientMap[(i,p)] < 60):
-				oscMsg = OSCMessage()
-				oscMsg.setAddress("/ffqmevox")
-				oscMsg.append(msg.encode('utf-8'))
-				## TODO: pan and tilt and delay
-				oscMsg.append(0)
-				oscMsg.append(0)
-				oscMsg.append(0)
-				try:
-					oscOut.connect((i,p))
-					oscOut.sendto(oscMsg, (i,p))
-					oscOut.connect((i,p))
-				except OSCClientError:
-					print "no connection to %s : %s, can't send message" % (i,p)
+			#if(time()-clientMap[(i,p)] < 60):
+			oscMsg = OSCMessage()
+			oscMsg.setAddress("/ffqmevox")
+			oscMsg.append(msg.encode('utf-8'))
+			## TODO: pan and tilt and delay
+			oscMsg.append(0)
+			oscMsg.append(0)
+			oscMsg.append(0)
+			try:
+				oscOut.connect((i,p))
+				oscOut.sendto(oscMsg, (i,p))
+				oscOut.connect((i,p))
+			except OSCClientError:
+				print "no connection to %s : %s, can't send message" % (i,p)
 
 def cleanUp():
 	oscIn.close()
