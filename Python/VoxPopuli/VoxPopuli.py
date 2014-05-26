@@ -12,11 +12,19 @@ from Queue import PriorityQueue
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
-import RPi.GPIO as GPIO
-import alsaaudio
+
+try:
+	import alsaaudio
+except ImportError:
+	from FakeClasses import FakeAlsa as alsaaudio
+
+try:
+	import RPi.GPIO as GPIO
+except ImportError:
+	from FakeClasses import FakeGPIO as GPIO
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-OSC_IN_ADDRESS = "200.0.0.101"
+OSC_IN_ADDRESS = "127.0.0.1" #"200.0.0.101"
 OSC_IN_PORT = 8888
 HTTP_IN_PORT = 8666
 LED_PIN = 7
@@ -73,8 +81,8 @@ def _setupAudio():
 		audioInput.setrate(44100)
 		audioInput.setformat(alsaaudio.PCM_FORMAT_S16_LE)
 		audioInput.setperiodsize(256)
-	except:
-		print "couldn't start audio device"
+	except Exception as e:
+		print "couldn't start audio device: "+str(e)
 		audioInput = None
 
 def setup():
@@ -181,6 +189,7 @@ if __name__=="__main__":
 		except KeyboardInterrupt:
 			cleanUp()
 			exit(0)
-		except:
+		except Exception as e:
+			print "loop caught: "+str(e)
 			cleanUp()
 			setup()
