@@ -71,8 +71,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		public void acceptMessage(Date time, OSCMessage message) {
 			// read: msg, pan, tilt from osc
 			String msg = (String)(message.getArguments().get(0));
-			byte pan = (byte)((Integer)(message.getArguments().get(1))).intValue();
-			byte tilt = (byte)((Integer)(message.getArguments().get(2))).intValue();
+			int pan = ((Integer)(message.getArguments().get(1))).intValue();
+			int tilt = ((Integer)(message.getArguments().get(2))).intValue();
 			int delay = ((Integer)(message.getArguments().get(3))).intValue();
 
 			Log.d(TAG, "OSC got : "+msg+" "+pan+" "+tilt+" "+delay+" from RPI");
@@ -88,11 +88,11 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private class MotorMessage {
 		public String msg;
-		public byte pan, tilt;
-		public MotorMessage(String m, byte p, byte t){
+		public int pan, tilt;
+		public MotorMessage(String m, int p, int t){
 			msg = m;
-			pan = p;
-			tilt = t;
+			pan = p&0xff;
+			tilt = t&0xff;
 		}
 	}
 	// queue for messages
@@ -252,14 +252,13 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			    @Override
 			    public void run() {
 					try{
-						/**/
 						Log.d(TAG, "send message");
+						OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
+						oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
+						mOscOut.send(oscPingMsg);
 						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
 						oscSmsMsg.addArgument("fala irmão");
 						mOscOut.send(oscSmsMsg);
-						/**/
-						// TODO: DEBUG 
-						//msgQueue.offer(new MotorMessage("aê rapaz!", (byte)0xff, (byte)0xff));
 					}
 					catch(IOException e){}
 					catch(NullPointerException e){}
@@ -270,8 +269,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				thread.join();
 			}
 			catch(InterruptedException e) {}
-			// TODO: DEBUG
-			//checkQueues();
 			return true;
 		}
 		return false;
@@ -367,7 +364,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				Thread motorThread = new Thread(new Runnable(){
 				    @Override
 				    public void run() {
-				    	byte[] buffer = {'F', 'Q', nextMessage.pan, nextMessage.tilt};
+				    	byte[] buffer = {'F', 'Q', (byte)nextMessage.pan, (byte)nextMessage.tilt};
 						try{
 							long startWaitMillis = System.currentTimeMillis();
 							isWaitingForMotor = true;
