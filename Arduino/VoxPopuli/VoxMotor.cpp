@@ -1,7 +1,7 @@
 #include "VoxMotor.h"
 
 #if DEBUG
-  #define MAX_PWM_DUTY 0.6
+  #define MAX_PWM_DUTY 0.5
   #define MAX_PWM_TIME 2200
 #else
   #define MAX_PWM_DUTY 0.4

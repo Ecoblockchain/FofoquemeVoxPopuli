@@ -58,8 +58,8 @@ void loop() {
     panMotor.goWait();
     tiltMotor.goWait();
     if(DEBUG){
-      panMotor.setTarget(255);
-      tiltMotor.setTarget(255);
+      panMotor.setTarget(random(128,255));
+      tiltMotor.setTarget(random(128,255));
     }
   }
 }
