@@ -145,20 +145,20 @@ def loop():
 		# TODO nltk
 		msg = messageQ.get()[1]
 		for (i,p) in clientMap:
-			#if(time()-clientMap[(i,p)] < 60):
-			oscMsg = OSCMessage()
-			oscMsg.setAddress("/ffqmevox")
-			oscMsg.append(msg.encode('utf-8'))
-			## TODO: pan and tilt and delay
-			oscMsg.append(randint(0,255))
-			oscMsg.append(randint(0,255))
-			oscMsg.append(0)
-			try:
-				oscOut.connect((i,p))
-				oscOut.sendto(oscMsg, (i,p))
-				oscOut.connect((i,p))
-			except OSCClientError:
-				print "no connection to %s : %s, can't send message" % (i,p)
+			if(time()-clientMap[(i,p)] < 60):
+				oscMsg = OSCMessage()
+				oscMsg.setAddress("/ffqmevox")
+				oscMsg.append(msg.encode('utf-8'))
+				## TODO: pan and tilt and delay
+				oscMsg.append(randint(0,255))
+				oscMsg.append(randint(0,255))
+				oscMsg.append(0)
+				try:
+					oscOut.connect((i,p))
+					oscOut.sendto(oscMsg, (i,p))
+					oscOut.connect((i,p))
+				except OSCClientError:
+					print "no connection to %s : %s, can't send message" % (i,p)
 
 def cleanUp():
 	oscIn.close()

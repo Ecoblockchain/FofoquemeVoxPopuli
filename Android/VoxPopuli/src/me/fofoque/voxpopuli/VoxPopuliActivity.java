@@ -57,6 +57,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private InputStream mInputStream = null;
 	private OutputStream mOutputStream = null;
 	private boolean isWaitingForMotor = false;
+	private Thread pingThread = null;
 
 	private TextToSpeech mTTS = null;
 	private MediaPlayer mAudioPlayer = null;
@@ -203,6 +204,23 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 
 		// for the pings
+		pingThread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				while(true){
+					try{
+						OSCMessage oscMsg = new OSCMessage("/ffqmeping");
+						oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
+						mOscOut.send(oscMsg);
+						Thread.sleep(30000);
+					}
+					catch(IOException e){}
+					catch(InterruptedException e){}
+				}
+			}
+		});
+		pingThread.start();
+
 		checkQueues();
 
 		// GUI
@@ -239,8 +257,10 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			if(mInputStream != null) mInputStream.close();
 			if(mOutputStream != null) mOutputStream.close();
 			if(myBTSocket != null) myBTSocket.close();
+			pingThread.join();
 		}
 		catch(IOException e){}
+		catch(InterruptedException e){}
 		super.onDestroy();
 	}
 
@@ -334,21 +354,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	}
 
 	private void checkQueues(){
-		// ping server
-		Thread oscThread = new Thread(new Runnable(){
-		    @Override
-		    public void run() {
-				try{
-					OSCMessage oscMsg = new OSCMessage("/ffqmeping");
-					oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
-					mOscOut.send(oscMsg);
-				}
-				catch(IOException e){}
-				catch(NullPointerException e){}
-		    }
-		});
-		oscThread.start();
-
 		// if already doing something, return
 		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying() || isWaitingForMotor){
 			return;
