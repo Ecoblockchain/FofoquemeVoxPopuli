@@ -1,7 +1,5 @@
 #include "VoxMotor.h"
 
-#define DEBUG 1
-
 #define PAN_PWM0 2
 #define PAN_PWM1 3
 #define PAN_SWITCH0 A10
@@ -22,6 +20,10 @@ void setup() {
   digitalWrite(13,LOW);
 
   Serial.print("\r\nVox Populi Started");
+  if(DEBUG){
+    panMotor.setTarget(255);
+    tiltMotor.setTarget(255);
+  }
 }
 
 void loop() {
@@ -55,6 +57,10 @@ void loop() {
     Serial1.flush();
     panMotor.goWait();
     tiltMotor.goWait();
+    if(DEBUG){
+      panMotor.setTarget(255);
+      tiltMotor.setTarget(255);
+    }
   }
 }
 

@@ -1,6 +1,12 @@
 #include "VoxMotor.h"
 
-#define PWM_MAX_DUTY 0.4
+#if DEBUG
+  #define MAX_PWM_DUTY 0.6
+  #define MAX_PWM_TIME 2200
+#else
+  #define MAX_PWM_DUTY 0.4
+  #define MAX_PWM_TIME 1200
+#endif
 
 VoxMotor::VoxMotor(int motor0, int motor1, int switch0, int switch1){
   // assume pwm'ing pin[0] will trigger limit[0]
@@ -37,7 +43,7 @@ void VoxMotor::setTarget(uint8_t t) {
     return;
   }
 
-  moveDurationMillis = map(constrain(t,0,255), 0,255, 800, 1200);
+  moveDurationMillis = map(constrain(t,0,255), 0,255, 800, MAX_PWM_TIME);
   moveStartMillis = millis();
   currentState = MOVE_FORWARD;
 }
@@ -61,7 +67,7 @@ void VoxMotor::update() {
   else if(currentState == MOVE_FORWARD){
     // duty cycle logic
     if(millis()-moveStartMillis < 0.25*moveDurationMillis){
-      currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
+      currentDutyCycle += (currentDutyCycle<MAX_PWM_DUTY)?0.1:0;
     }
     else if(millis()-moveStartMillis > 0.75*moveDurationMillis){
       currentDutyCycle -= (currentDutyCycle>0.1)?0.1:0;
@@ -83,7 +89,7 @@ void VoxMotor::update() {
     }
 
     // duty cycle logic: only speeds up
-    currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
+    currentDutyCycle += (currentDutyCycle<MAX_PWM_DUTY)?0.1:0;
 
     // next state logic
     if((digitalRead(limit[0]) == HIGH) && (digitalRead(limit[1]) == HIGH)){

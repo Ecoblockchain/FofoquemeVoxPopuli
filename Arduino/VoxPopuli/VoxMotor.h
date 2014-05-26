@@ -1,6 +1,8 @@
 #pragma once
 #include "Arduino.h"
 
+#define DEBUG 1
+
 class VoxMotor {
   enum StateType { 
     WAIT, MOVE_FORWARD, MOVE_BACK, DONE };
