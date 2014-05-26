@@ -252,16 +252,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			    @Override
 			    public void run() {
 					try{
-						/*
-						Log.d(TAG, "send ping and message");
+						/**/
+						Log.d(TAG, "send message");
 						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
 						oscSmsMsg.addArgument("fala irmão");
 						mOscOut.send(oscSmsMsg);
-						*/
+						/**/
 						// TODO: DEBUG 
-						msgQueue.offer(new MotorMessage("aê rapaz!", (byte)0xff, (byte)0xff));
+						//msgQueue.offer(new MotorMessage("aê rapaz!", (byte)0xff, (byte)0xff));
 					}
-					//catch(IOException e){}
+					catch(IOException e){}
 					catch(NullPointerException e){}
 			    }
 			});
@@ -271,7 +271,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			}
 			catch(InterruptedException e) {}
 			// TODO: DEBUG
-			checkQueues();
+			//checkQueues();
 			return true;
 		}
 		return false;
