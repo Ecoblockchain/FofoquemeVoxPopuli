@@ -75,7 +75,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			byte tilt = (byte)((Integer)(message.getArguments().get(2))).intValue();
 			int delay = ((Integer)(message.getArguments().get(3))).intValue();
 
-			Log.d(TAG, "OSC got : "+msg+" "+pan+" "+tilt+" "+delay+" from BBB");
+			Log.d(TAG, "OSC got : "+msg+" "+pan+" "+tilt+" "+delay+" from RPI");
 			if(msg == VOICE_MESSAGE_STRING){
 				((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
 			}

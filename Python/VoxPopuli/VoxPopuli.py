@@ -6,6 +6,7 @@
 from time import time, sleep, strftime, localtime
 from sys import exit
 from threading import Thread
+from random import randint
 from subprocess import call
 from Queue import PriorityQueue
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
@@ -149,8 +150,8 @@ def loop():
 			oscMsg.setAddress("/ffqmevox")
 			oscMsg.append(msg.encode('utf-8'))
 			## TODO: pan and tilt and delay
-			oscMsg.append(0)
-			oscMsg.append(0)
+			oscMsg.append(randint(0,255))
+			oscMsg.append(randint(0,255))
 			oscMsg.append(0)
 			try:
 				oscOut.connect((i,p))

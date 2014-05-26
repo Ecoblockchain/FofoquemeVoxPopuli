@@ -37,7 +37,7 @@ void VoxMotor::setTarget(uint8_t t) {
     return;
   }
 
-  moveDurationMillis = 1000; //map(abs(targetPosition - currentPosition), 0,255, 1000, 2000);
+  moveDurationMillis = map(constrain(t,0,255), 0,255, 800, 1200);
   moveStartMillis = millis();
   currentState = MOVE_FORWARD;
 }
@@ -69,10 +69,19 @@ void VoxMotor::update() {
 
     // next state logic
     if(millis()-moveStartMillis > moveDurationMillis){
+      currentDirection = !currentDirection;
       currentState = DONE;
     }
   }
   else if(currentState == MOVE_BACK){
+    // end-switch logic
+    if(digitalRead(limit[0]) == LOW){
+      currentDirection = 1;
+    }
+    if(digitalRead(limit[1]) == LOW){
+      currentDirection = 0;
+    }
+
     // duty cycle logic: only speeds up
     currentDutyCycle += (currentDutyCycle<PWM_MAX_DUTY)?0.1:0;
 
