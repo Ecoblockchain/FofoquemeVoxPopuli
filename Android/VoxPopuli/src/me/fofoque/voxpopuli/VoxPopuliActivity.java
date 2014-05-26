@@ -49,7 +49,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	private static final String BLUETOOTH_ADDRESS = Build.SERIAL.equals("11ec8d43")?"98:76:B6:00:1C:CB":
-		Build.SERIAL.equals("11ec8d42")?"98:76:B6:00:1C:BF":"98:76:B6:00:1C:DA";
+		Build.SERIAL.equals("54c42949")?"00:11:12:02:71:14":"98:76:B6:00:1C:DA";
 
 	private ToggleButton buttonLED;
 
@@ -254,16 +254,11 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 					try{
 						/*
 						Log.d(TAG, "send ping and message");
-						OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
-						oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
-						mOscOut.send(oscPingMsg);
 						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
 						oscSmsMsg.addArgument("fala irmão");
 						mOscOut.send(oscSmsMsg);
-						OSCMessage oscVoxMsg = new OSCMessage("/ffqmesms");
-						oscVoxMsg.addArgument(VOICE_MESSAGE_STRING);
-						mOscOut.send(oscVoxMsg);
 						*/
+						// TODO: DEBUG 
 						msgQueue.offer(new MotorMessage("aê rapaz!", (byte)0xff, (byte)0xff));
 					}
 					//catch(IOException e){}
@@ -275,6 +270,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 				thread.join();
 			}
 			catch(InterruptedException e) {}
+			// TODO: DEBUG
 			checkQueues();
 			return true;
 		}
