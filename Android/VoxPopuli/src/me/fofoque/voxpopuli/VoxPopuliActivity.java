@@ -43,7 +43,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
 	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-	private static final String VOX_SERVER_ADDRESS = "192.168.2.117";// "200.0.0.101";
+	private static final String VOX_SERVER_ADDRESS = "200.0.0.101";
 	private static final String VOICE_MESSAGE_URL = "http://"+VOX_SERVER_ADDRESS+":8666/vox.mp3";
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
