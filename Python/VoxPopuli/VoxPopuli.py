@@ -24,7 +24,7 @@ except ImportError:
 	from FakeClasses import FakeGPIO as GPIO
 
 VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
-OSC_IN_ADDRESS = "127.0.0.1" #"200.0.0.101"
+OSC_IN_ADDRESS = "200.0.0.101"
 OSC_IN_PORT = 8888
 HTTP_IN_PORT = 8666
 LED_PIN = 7
