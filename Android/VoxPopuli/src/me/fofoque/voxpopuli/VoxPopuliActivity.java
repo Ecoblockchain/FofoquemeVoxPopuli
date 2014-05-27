@@ -205,17 +205,25 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		// for the pings
 		pingThread = new Thread(new Runnable(){
+			private boolean bRun = true;
 			@Override
 			public void run() {
-				while(true){
+				while(bRun){
 					try{
+						Log.d(TAG, "send ping");
+						bRun = !(Thread.currentThread().isInterrupted());
 						OSCMessage oscMsg = new OSCMessage("/ffqmeping");
 						oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
 						mOscOut.send(oscMsg);
 						Thread.sleep(30000);
 					}
-					catch(IOException e){}
-					catch(InterruptedException e){}
+					catch(IOException e){
+						Log.e(TAG, "send ping IO");
+					}
+					catch(InterruptedException e){
+						Log.e(TAG, "ping thread interrupted");
+						bRun = false;
+					}
 				}
 			}
 		});
@@ -251,12 +259,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		unregisterReceiver(mSMS);
 		if(mTTS != null) mTTS.shutdown();
 		if (mAudioPlayer != null) mAudioPlayer.release();
-		if(mOscIn != null) mOscIn.close();
+		if(mOscIn != null) {
+			mOscIn.stopListening();
+			mOscIn.close();
+		}
 		if(mOscOut != null) mOscOut.close();
 		try{
 			if(mInputStream != null) mInputStream.close();
 			if(mOutputStream != null) mOutputStream.close();
 			if(myBTSocket != null) myBTSocket.close();
+			pingThread.interrupt();
 			pingThread.join();
 		}
 		catch(IOException e){}
