@@ -57,6 +57,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private InputStream mInputStream = null;
 	private OutputStream mOutputStream = null;
 	private boolean isWaitingForMotor = false;
+	private boolean isPlayingVoiceFile = false;
 	private Thread pingThread = null;
 
 	private TextToSpeech mTTS = null;
@@ -151,7 +152,10 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "Serial: "+Build.SERIAL);
 		Log.d(TAG, "BT Address: "+BLUETOOTH_ADDRESS);
- 
+
+		// play silence
+		playSilence();
+
 		// Bluetooth
 		// from : http://stackoverflow.com/questions/6565144/android-bluetooth-com-port
 		BluetoothAdapter myBTAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -321,6 +325,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		mTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
 			@Override
 			public void onUtteranceCompleted (String utteranceId){
+				playSilence();
 				// check if there are things to be said
 				VoxPopuliActivity.this.checkQueues();
 			}
@@ -367,7 +372,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private void checkQueues(){
 		// if already doing something, return
-		if(mTTS.isSpeaking() || mAudioPlayer.isPlaying() || isWaitingForMotor){
+		if(mTTS.isSpeaking() || isPlayingVoiceFile || isWaitingForMotor){
 			return;
 		}
 
@@ -412,6 +417,33 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
+	private void playSilence(){
+		if(mAudioPlayer != null) mAudioPlayer.release();
+		mAudioPlayer = new MediaPlayer();
+		mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		try{
+			mAudioPlayer.setDataSource(getAssets().openFd("silence.mp3").getFileDescriptor());
+		}
+		catch(IOException e){}
+		mAudioPlayer.setLooping(true);
+		/*
+		mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				Log.d(TAG, "from media completion");
+				VoxPopuliActivity.this.checkQueues();
+			}
+		});
+		*/
+		mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+			@Override
+			public void onPrepared(MediaPlayer mp) {
+				Log.d(TAG, "silent media prepared");
+				mp.start();
+			}
+		});
+		mAudioPlayer.prepareAsync();
+	}
 	private void playMessage(String msg){
 		if(msg.equals(VOICE_MESSAGE_STRING)){
 			Log.d(TAG, "audio file type");
@@ -424,6 +456,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 					@Override
 					public void onCompletion(MediaPlayer mp) {
 						Log.d(TAG, "from media completion");
+						isPlayingVoiceFile = false;
+						playSilence();
 						VoxPopuliActivity.this.checkQueues();
 					}
 				});
@@ -434,6 +468,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						mp.start();
 					}
 				});
+				isPlayingVoiceFile = true;
 				mAudioPlayer.prepareAsync();
 			}
 			catch(IOException e){
