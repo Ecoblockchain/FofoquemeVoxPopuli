@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import android.app.Activity;
@@ -84,7 +86,11 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			else {
 				msgQueue.offer(new MotorMessage(msg, pan, tilt));
 			}
-			checkQueues();
+			new Timer().schedule(new TimerTask() {
+			    @Override
+			    public void run() {
+					checkQueues();
+			    }}, delay);
 		}
 	};
 
