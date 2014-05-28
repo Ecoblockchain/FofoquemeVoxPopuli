@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -324,7 +325,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		// slow her down a little...
 		mTTS.setSpeechRate(0.66f);
-		mTTS.setPitch(1.0f);
+		mTTS.setPitch((new Random()).nextFloat()*0.5f+0.5f);
 
 		// attach listener
 		mTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
