@@ -6,7 +6,7 @@
 from time import time, sleep, strftime, localtime
 from sys import exit
 from threading import Thread
-from random import randint
+from random import randint, random
 from subprocess import call
 from Queue import PriorityQueue
 from OSC import OSCClient, OSCMessage, OSCServer, getUrlStr, OSCClientError
@@ -152,7 +152,7 @@ def loop():
 		# TODO change this to something more complicated...
 		# TODO nltk
 		msg = messageQ.get()[1]
-		for (i,p) in clientMap:
+		for index, (i,p) in enumerate(clientMap):
 			if(time()-clientMap[(i,p)] < 60):
 				oscMsg = OSCMessage()
 				oscMsg.setAddress("/ffqmevox")
@@ -160,7 +160,7 @@ def loop():
 				## TODO: pan and tilt and delay
 				oscMsg.append(randint(0,255))
 				oscMsg.append(randint(0,255))
-				oscMsg.append(0)
+				oscMsg.append(0 if random()<0.8 else index*1000)
 				try:
 					oscOut.connect((i,p))
 					oscOut.sendto(oscMsg, (i,p))
