@@ -171,8 +171,8 @@ def loop():
 def cleanUp():
 	oscIn.close()
 	oscThread.join()
-	mAudioServer.stop()
-	mAudioServer.join()
+	#mAudioServer.stop()
+	#mAudioServer.join()
 	GPIO.cleanup()
 
 if __name__=="__main__":
