@@ -160,7 +160,7 @@ def loop():
 				## TODO: pan and tilt and delay
 				oscMsg.append(randint(0,255))
 				oscMsg.append(randint(0,255))
-				oscMsg.append(0 if random()<0.8 else index*1000)
+				oscMsg.append(0 if random()<0.66 else index*len(msg.encode('utf-8'))*200)
 				try:
 					oscOut.connect((i,p))
 					oscOut.sendto(oscMsg, (i,p))
