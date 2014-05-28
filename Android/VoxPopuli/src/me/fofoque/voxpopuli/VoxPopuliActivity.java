@@ -210,23 +210,22 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		// for the pings
 		pingThread = new Thread(new Runnable(){
 			private boolean bRun = true;
+			private long lastPingMillis = System.currentTimeMillis()-30000;
 			@Override
 			public void run() {
 				while(bRun){
 					try{
-						Log.d(TAG, "send ping");
-						bRun = !(Thread.currentThread().isInterrupted());
-						OSCMessage oscMsg = new OSCMessage("/ffqmeping");
-						oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
-						mOscOut.send(oscMsg);
-						Thread.sleep(30000);
+						if(System.currentTimeMillis()-lastPingMillis > 30000){
+							Log.d(TAG, "send ping");
+							lastPingMillis = System.currentTimeMillis();
+							bRun = !(Thread.currentThread().isInterrupted());
+							OSCMessage oscMsg = new OSCMessage("/ffqmeping");
+							oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
+							mOscOut.send(oscMsg);
+						}
 					}
 					catch(IOException e){
 						Log.e(TAG, "send ping IO");
-					}
-					catch(InterruptedException e){
-						Log.e(TAG, "ping thread interrupted");
-						bRun = false;
 					}
 				}
 			}
@@ -338,7 +337,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		if((myBTSocket != null) && (myBTSocket.getRemoteDevice() != null)){
 			// if the device is not bonded, try to bond again...
 			while(myBTSocket.getRemoteDevice().getBondState() == BluetoothDevice.BOND_NONE){
-				Log.d(TAG, "from sendSerialSignal: BTDevice not bonded, trying to re-bond");
+				Log.d(TAG, "from BT BondCheck: BTDevice not bonded, trying to re-bond");
 				bluetoothInitHelper(BluetoothAdapter.getDefaultAdapter());
 			}
 		}
@@ -379,19 +378,19 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		// check queue for new messages
 		if(msgQueue.peek() != null){
 			Log.d(TAG, "there's msg");
+			bluetoothBondCheck();
 			final MotorMessage nextMessage = msgQueue.poll();
-			if (mOutputStream != null) {
+			if ((mOutputStream != null) && (mInputStream != null)){
 				Log.d(TAG, "there's arduino");
-				bluetoothBondCheck();
 				Thread motorThread = new Thread(new Runnable(){
 				    @Override
 				    public void run() {
 				    	byte[] buffer = {'F', 'Q', (byte)nextMessage.pan, (byte)nextMessage.tilt};
 						try{
 							long startWaitMillis = System.currentTimeMillis();
-							isWaitingForMotor = true;
 							mOutputStream.write(buffer);
 							Log.d(TAG, "wrote to motors");
+							isWaitingForMotor = true;
 							while((mInputStream.available() < 2) && (System.currentTimeMillis() - startWaitMillis < 4000)){
 								Thread.sleep(100);
 							}
@@ -407,12 +406,19 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 						}
 						catch(IOException e){
 							Log.e(TAG, "read or write failed", e);
+							mInputStream = null;
+							mOutputStream = null;
+							bluetoothInitHelper(BluetoothAdapter.getDefaultAdapter());
 						}
 						catch(NullPointerException e){}
 						catch(InterruptedException e){}
 				    }
 				});
 				motorThread.start();
+			}
+			// BT streams are null, connect again
+			else{
+				bluetoothInitHelper(BluetoothAdapter.getDefaultAdapter());
 			}
 		}
 	}
@@ -426,15 +432,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 		catch(IOException e){}
 		mAudioPlayer.setLooping(true);
-		/*
-		mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-				Log.d(TAG, "from media completion");
-				VoxPopuliActivity.this.checkQueues();
-			}
-		});
-		*/
 		mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 			@Override
 			public void onPrepared(MediaPlayer mp) {
