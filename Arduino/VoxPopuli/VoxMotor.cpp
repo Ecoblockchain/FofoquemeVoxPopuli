@@ -5,7 +5,7 @@
   #define MAX_PWM_TIME 2200
 #else
   #define MAX_PWM_DUTY 0.4
-  #define MAX_PWM_TIME 1200
+  #define MAX_PWM_TIME 1400
 #endif
 
 VoxMotor::VoxMotor(int motor0, int motor1, int switch0, int switch1){
@@ -43,7 +43,7 @@ void VoxMotor::setTarget(uint8_t t) {
     return;
   }
 
-  moveDurationMillis = map(constrain(t,0,255), 0,255, 800, MAX_PWM_TIME);
+  moveDurationMillis = map(constrain(t,0,255), 0,255, 900, MAX_PWM_TIME);
   moveStartMillis = millis();
   currentState = MOVE_FORWARD;
 }
