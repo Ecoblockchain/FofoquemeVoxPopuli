@@ -51,8 +51,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	private static final String BLUETOOTH_ADDRESS = Build.SERIAL.equals("11ec8d43")?"98:76:B6:00:1C:CB":
-		Build.SERIAL.equals("54c42949")?"00:11:12:02:71:14":"98:76:B6:00:1C:DA";
+	private static final String BLUETOOTH_ADDRESS = Build.SERIAL.equals("11ec8d43")?"00:14:03:07:15:21":
+		Build.SERIAL.equals("54c42949")?"00:14:03:07:03:77":"00:14:03:06:19:99";
 
 	private ToggleButton buttonLED;
 
