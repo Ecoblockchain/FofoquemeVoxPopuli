@@ -103,8 +103,8 @@ def setup():
 	print "osc in ready"
 
 	## setup audio server
-	mAudioServer = ThreadedServer()
-	mAudioServer.start()
+	#mAudioServer = ThreadedServer()
+	#mAudioServer.start()
 
 	## setup gpio
 	GPIO.setmode(GPIO.BCM)
