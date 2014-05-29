@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Fofoque-me: Vox Populi</string>
+    <string name="button_test_serial_text">Teste do Bluetooth Serial</string>
+    <string name="button_test_megaphone_text">Teste do Megafone</string>
+    <string name="button_test_system_text">Teste do Sistema</string>
+    <string name="button_quit_text">Desligar Aplicativo</string>
 </resources>

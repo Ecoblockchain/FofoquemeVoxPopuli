@@ -30,7 +30,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.MotionEvent;
 import android.widget.ToggleButton;
 
 import android.speech.tts.TextToSpeech;
@@ -286,36 +285,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		super.onDestroy();
 	}
 
-	@Override
-	public boolean onTouchEvent(MotionEvent event){
-		if((event.getAction() == MotionEvent.ACTION_UP)){
-			// ping server
-			Thread thread = new Thread(new Runnable(){
-			    @Override
-			    public void run() {
-					try{
-						Log.d(TAG, "send message");
-						OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
-						oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
-						mOscOut.send(oscPingMsg);
-						OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
-						oscSmsMsg.addArgument("fala irm‹o");
-						mOscOut.send(oscSmsMsg);
-					}
-					catch(IOException e){}
-					catch(NullPointerException e){}
-			    }
-			});
-			thread.start();
-			try{
-				thread.join();
-			}
-			catch(InterruptedException e) {}
-			return true;
-		}
-		return false;
-	}
-
 	// from OnInitListener interface
 	public void onInit(int status){
 		// set the package and language for tts
@@ -486,6 +455,41 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			// pause before and afterwards.
 			mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
 		}
+	}
+
+	public void testMegaphone(View v){
+		String msg = "testando o megafone. n‹o Ž?";
+		int panAndTilt = 128;
+		((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, panAndTilt, panAndTilt));
+		checkQueues();
+	}
+
+	public void quitActivity(View v){
+		finish();
+	}
+
+	public void testSystem(View v){
+		Thread thread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				try{
+					Log.d(TAG, "send message");
+					OSCMessage oscPingMsg = new OSCMessage("/ffqmeping");
+					oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
+					mOscOut.send(oscPingMsg);
+					OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
+					oscSmsMsg.addArgument("testando sistema fofoque me. sim? ou n‹o?");
+					mOscOut.send(oscSmsMsg);
+				}
+				catch(IOException e){}
+				catch(NullPointerException e){}
+			}
+		});
+		thread.start();
+		try{
+			thread.join();
+		}
+		catch(InterruptedException e) {}
 	}
 
 	public void blinkLED(View v){
