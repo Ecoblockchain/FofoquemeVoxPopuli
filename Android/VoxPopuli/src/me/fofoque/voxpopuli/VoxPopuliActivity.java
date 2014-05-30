@@ -452,6 +452,10 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			Log.d(TAG, "TTS type");
 			HashMap<String,String> foo = new HashMap<String,String>();
 			foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
+			// stop silence
+			mAudioPlayer.pause();
+			mAudioPlayer.stop();
+			if(mAudioPlayer != null) mAudioPlayer.release();
 			// pause before and afterwards.
 			mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
 		}
