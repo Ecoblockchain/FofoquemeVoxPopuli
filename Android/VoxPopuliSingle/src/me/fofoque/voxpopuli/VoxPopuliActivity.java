@@ -24,8 +24,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -44,9 +42,7 @@ import com.illposed.osc.OSCPortOut;
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
-	private static final String VOICE_MESSAGE_STRING = "!!!FFQMEVOXPOPULI!!!";
 	private static final String VOX_SERVER_ADDRESS = "200.0.0.101";
-	private static final String VOICE_MESSAGE_URL = "http://"+VOX_SERVER_ADDRESS+":8666/vox.mp3";
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -61,11 +57,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private InputStream mInputStream = null;
 	private OutputStream mOutputStream = null;
 	private boolean isWaitingForMotor = false;
-	private boolean isPlayingVoiceFile = false;
 	private Thread pingThread = null;
 
 	private TextToSpeech mTTS = null;
-	private MediaPlayer mAudioPlayer = null;
 	private SMSReceiver mSMS = null;
 	
 	private OSCPortIn mOscIn = null;
@@ -82,12 +76,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			int delay = ((Integer)(message.getArguments().get(3))).intValue();
 
 			Log.d(TAG, "OSC got : "+msg+" "+pan+" "+tilt+" "+delay+" from RPI");
-			if(msg == VOICE_MESSAGE_STRING){
-				((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, pan, tilt));
-			}
-			else {
-				msgQueue.offer(new MotorMessage(msg, pan, tilt));
-			}
+			msgQueue.offer(new MotorMessage(msg, pan, tilt));
+
 			new Timer().schedule(new TimerTask() {
 			    @Override
 			    public void run() {
@@ -161,9 +151,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		Log.d(TAG, "Serial: "+Build.SERIAL);
 		Log.d(TAG, "BT Address: "+BLUETOOTH_ADDRESS);
 
-		// play silence
-		playSilence();
-
 		// Bluetooth
 		// from : http://stackoverflow.com/questions/6565144/android-bluetooth-com-port
 		BluetoothAdapter myBTAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -179,7 +166,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		// FFQ
 		mTTS = (mTTS == null)?(new TextToSpeech(this, this)):mTTS;
-		mAudioPlayer = (mAudioPlayer == null)?(new MediaPlayer()):mAudioPlayer;
 		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
 		registerReceiver(mSMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
@@ -269,7 +255,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	public void onDestroy() {
 		unregisterReceiver(mSMS);
 		if(mTTS != null) mTTS.shutdown();
-		if (mAudioPlayer != null) mAudioPlayer.release();
 		if(mOscIn != null) {
 			mOscIn.stopListening();
 			mOscIn.close();
@@ -302,7 +287,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		mTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
 			@Override
 			public void onUtteranceCompleted (String utteranceId){
-				playSilence();
 				// check if there are things to be said
 				VoxPopuliActivity.this.checkQueues();
 			}
@@ -349,7 +333,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private void checkQueues(){
 		// if already doing something, return
-		if(mTTS.isSpeaking() || isPlayingVoiceFile || isWaitingForMotor){
+		if(mTTS.isSpeaking() || isWaitingForMotor){
 			return;
 		}
 
@@ -401,70 +385,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
-	private void playSilence(){
-		if(mAudioPlayer != null) mAudioPlayer.release();
-		mAudioPlayer = new MediaPlayer();
-		mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-		try{
-			mAudioPlayer.setDataSource(getAssets().openFd("silence.mp3").getFileDescriptor());
-		}
-		catch(IOException e){}
-		mAudioPlayer.setLooping(true);
-		mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-			@Override
-			public void onPrepared(MediaPlayer mp) {
-				Log.d(TAG, "silent media prepared");
-				mp.start();
-			}
-		});
-		mAudioPlayer.prepareAsync();
-	}
 	private void playMessage(String msg){
-		if(msg.equals(VOICE_MESSAGE_STRING)){
-			Log.d(TAG, "audio file type");
-			try{
-				if(mAudioPlayer != null) mAudioPlayer.release();
-				mAudioPlayer = new MediaPlayer();
-				mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-				mAudioPlayer.setDataSource(VOICE_MESSAGE_URL);
-				mAudioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-					@Override
-					public void onCompletion(MediaPlayer mp) {
-						Log.d(TAG, "from media completion");
-						isPlayingVoiceFile = false;
-						playSilence();
-						VoxPopuliActivity.this.checkQueues();
-					}
-				});
-				mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {					
-					@Override
-					public void onPrepared(MediaPlayer mp) {
-						Log.d(TAG, "from media prepared");
-						mp.start();
-					}
-				});
-				isPlayingVoiceFile = true;
-				mAudioPlayer.prepareAsync();
-			}
-			catch(IOException e){
-				Log.e(TAG, "failed to open stream", e);
-			}
-		}
-		else{
-			Log.d(TAG, "TTS type");
-			HashMap<String,String> foo = new HashMap<String,String>();
-			foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
-			// stop silence
-			mAudioPlayer.pause();
-			mAudioPlayer.stop();
-			if(mAudioPlayer != null) mAudioPlayer.release();
-			// pause before and afterwards.
-			mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
-		}
+		Log.d(TAG, "playing TTS message");
+		HashMap<String,String> foo = new HashMap<String,String>();
+		foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
+		// pause before and afterwards.
+		mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
 	}
 
 	public void testMegaphone(View v){
-		String msg = "testando o megafone. não é?";
+		String msg = "testando o megafone. n√£o √©?";
 		int panAndTilt = 128;
 		((LinkedList<MotorMessage>)msgQueue).addFirst(new MotorMessage(msg, panAndTilt, panAndTilt));
 		checkQueues();
@@ -484,7 +414,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 					oscPingMsg.addArgument(Integer.toString(OSC_IN_PORT));
 					mOscOut.send(oscPingMsg);
 					OSCMessage oscSmsMsg = new OSCMessage("/ffqmesms");
-					oscSmsMsg.addArgument("testando sistema fofoque me. sim? ou não?");
+					oscSmsMsg.addArgument("testando sistema fofoque me. sim? ou n√£o?");
 					mOscOut.send(oscSmsMsg);
 				}
 				catch(IOException e){}
