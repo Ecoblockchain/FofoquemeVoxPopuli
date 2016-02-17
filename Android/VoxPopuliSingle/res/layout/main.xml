@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+<Button
+    android:text="@string/button_test_megaphone_text"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/testMegaphoneButton"
+    android:onClick="testMegaphone" />
+<Button
+    android:text="@string/button_test_system_text"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/testSystemButton"
+    android:onClick="testSystem" />
+<Button
+    android:text="@string/button_quit_text"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/quitButton"
+    android:onClick="quitActivity" />
+<TextView  
+	android:text="@string/button_test_serial_text"
+	android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/title" />
+<ToggleButton
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/ledButton"
+    android:textOn="Aceso"
+    android:textOff="Apagado"
+    android:onClick="blinkLED" />
+</LinearLayout>
