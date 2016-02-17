@@ -10,12 +10,6 @@
     android:id="@+id/testMegaphoneButton"
     android:onClick="testMegaphone" />
 <Button
-    android:text="@string/button_test_system_text"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:id="@+id/testSystemButton"
-    android:onClick="testSystem" />
-<Button
     android:text="@string/button_quit_text"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
