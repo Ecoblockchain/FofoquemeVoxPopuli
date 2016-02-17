@@ -46,10 +46,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final int OSC_OUT_PORT = 8888;
 	private static final int OSC_IN_PORT = 8989;
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	// 11ec8d43 : phone by the bathroom
-	// 54c42949 : phone by the cinema booth
-	private static final String BLUETOOTH_ADDRESS = Build.SERIAL.equals("11ec8d43")?"00:14:03:07:15:21":
-		Build.SERIAL.equals("54c42949")?"00:14:03:07:03:77":"00:14:03:06:19:99";
+	private static final String BLUETOOTH_ADDRESS = "00:14:03:06:19:99";
 
 	private ToggleButton buttonLED;
 
@@ -57,7 +54,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private InputStream mInputStream = null;
 	private OutputStream mOutputStream = null;
 	private boolean isWaitingForMotor = false;
-	private Thread pingThread = null;
 
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
@@ -201,31 +197,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			Log.d(TAG, "server address " + oscOutAdressString);
 		}
 
-		// for the pings
-		pingThread = new Thread(new Runnable(){
-			private boolean bRun = true;
-			private long lastPingMillis = System.currentTimeMillis()-30000;
-			@Override
-			public void run() {
-				while(bRun){
-					try{
-						if(System.currentTimeMillis()-lastPingMillis > 30000){
-							Log.d(TAG, "send ping");
-							lastPingMillis = System.currentTimeMillis();
-							bRun = !(Thread.currentThread().isInterrupted());
-							OSCMessage oscMsg = new OSCMessage("/ffqmeping");
-							oscMsg.addArgument(Integer.toString(OSC_IN_PORT));
-							mOscOut.send(oscMsg);
-						}
-					}
-					catch(IOException e){
-						Log.e(TAG, "send ping IO");
-					}
-				}
-			}
-		});
-		pingThread.start();
-
 		checkQueues();
 
 		// GUI
@@ -264,11 +235,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			if(mInputStream != null) mInputStream.close();
 			if(mOutputStream != null) mOutputStream.close();
 			if(myBTSocket != null) myBTSocket.close();
-			pingThread.interrupt();
-			pingThread.join();
 		}
 		catch(IOException e){}
-		catch(InterruptedException e){}
 		super.onDestroy();
 	}
 
