@@ -26,11 +26,13 @@ import android.widget.ToggleButton;
 
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.Engine;
+import android.speech.tts.UtteranceProgressListener;
 import android.telephony.SmsMessage;
 
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
+	private static final String TTS_ENGINE_PACKAGE_NAME = "com.svox.classic";
 	private static final UUID SERIAL_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	private static final String BLUETOOTH_ADDRESS = "00:14:03:06:19:99";
 
@@ -116,7 +118,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 
 		// FFQ
-		mTTS = (mTTS == null)?(new TextToSpeech(this, this)):mTTS;
+		mTTS = (mTTS == null)?(new TextToSpeech(this, this, TTS_ENGINE_PACKAGE_NAME)):mTTS;
 		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
 		registerReceiver(mSMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
@@ -162,7 +164,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	public void onInit(int status){
 		// set the package and language for tts
 		//   these are the values for Luciana
-		mTTS.setEngineByPackageName("com.svox.classic");
 		mTTS.setLanguage(new Locale("pt_BR"));
 
 		// slow her down a little...
@@ -170,10 +171,14 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		mTTS.setPitch((new Random()).nextFloat()*0.5f+0.5f);
 
 		// attach listener
-		mTTS.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener(){
+		mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
 			@Override
-			public void onUtteranceCompleted (String utteranceId){
-				// check if there are things to be said
+			public void onStart(String utteranceId) {}
+			@Override
+			public void onError(String utteranceId) {}
+			@Override
+			public void onDone(String utteranceId) {
+				// check if there are other things to be said
 				VoxPopuliActivity.this.checkQueues();
 			}
 		});
