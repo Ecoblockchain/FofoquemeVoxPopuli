@@ -18,6 +18,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -53,6 +55,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
 	private TwitterStream mTwitterStream = null;
+	private MediaPlayer mAudioPlayer = null;
 
 	private String smsMessageText = "";
 
@@ -134,6 +137,9 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		Log.d(TAG, "Serial: "+Build.SERIAL);
 		Log.d(TAG, "BT Address: "+BLUETOOTH_ADDRESS);
 
+		// play silence
+		playSilence();
+
 		// Bluetooth
 		// from : http://stackoverflow.com/questions/6565144/android-bluetooth-com-port
 		BluetoothAdapter myBTAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -148,6 +154,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 
 		// FFQ
+		mAudioPlayer = (mAudioPlayer == null)?(new MediaPlayer()):mAudioPlayer;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
 
 		mTTS = (mTTS == null)?(new TextToSpeech(this, this, TTS_ENGINE_PACKAGE_NAME)):mTTS;
@@ -187,6 +194,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	public void onDestroy() {
 		unregisterReceiver(mSMS);
 		if(mTTS != null) mTTS.shutdown();
+		if (mAudioPlayer != null) mAudioPlayer.release();
 		try{
 			if(mInputStream != null) mInputStream.close();
 			if(mOutputStream != null) mOutputStream.close();
@@ -214,6 +222,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 			public void onError(String utteranceId) {}
 			@Override
 			public void onDone(String utteranceId) {
+				playSilence();
 				// check if there are other things to be said
 				VoxPopuliActivity.this.checkQueues();
 			}
@@ -312,10 +321,33 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
+	private void playSilence(){
+		if(mAudioPlayer != null) mAudioPlayer.release();
+		mAudioPlayer = new MediaPlayer();
+		mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		try{
+			mAudioPlayer.setDataSource(getAssets().openFd("silence.mp3").getFileDescriptor());
+		}
+		catch(IOException e){}
+		mAudioPlayer.setLooping(true);
+		mAudioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+			@Override
+			public void onPrepared(MediaPlayer mp) {
+				Log.d(TAG, "silent media prepared");
+				mp.start();
+			}
+		});
+		mAudioPlayer.prepareAsync();
+	}
+
 	private void playMessage(String msg){
 		Log.d(TAG, "playing TTS message");
 		HashMap<String,String> foo = new HashMap<String,String>();
 		foo.put(Engine.KEY_PARAM_UTTERANCE_ID, "1234");
+		// stop silence
+		mAudioPlayer.pause();
+		mAudioPlayer.stop();
+		if(mAudioPlayer != null) mAudioPlayer.release();
 		// pause before and afterwards.
 		mTTS.speak(". . "+msg+" . . ", TextToSpeech.QUEUE_ADD, foo);
 	}
