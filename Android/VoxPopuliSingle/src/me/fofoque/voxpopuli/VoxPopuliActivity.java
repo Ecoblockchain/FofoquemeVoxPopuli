@@ -29,6 +29,13 @@ import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.UtteranceProgressListener;
 import android.telephony.SmsMessage;
 
+import twitter4j.StallWarning;
+import twitter4j.Status;
+import twitter4j.StatusDeletionNotice;
+import twitter4j.StatusListener;
+import twitter4j.TwitterStream;
+import twitter4j.TwitterStreamFactory;
+
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "VoxPopTag ";
@@ -45,6 +52,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
+	private TwitterStream mTwitterStream = null;
 
 	private String smsMessageText = "";
 
@@ -98,6 +106,28 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 	}
 
+	StatusListener mTwitterStatusListener = new StatusListener(){
+        public void onStatus(Status status) {
+			String twitterMessageText = status.getText();
+
+			// clean up the @/# if it's there...
+			twitterMessageText = twitterMessageText.replaceAll("[@#]?", "");
+			twitterMessageText = twitterMessageText.replaceAll("[():]+", "");
+
+			// add to queue
+			int pan = (new Random()).nextInt(255);
+			int tilt = (new Random()).nextInt(255);
+			Log.d(TAG, "Adding: ("+twitterMessageText+","+pan+","+tilt+") to queue");
+			msgQueue.offer(new MotorMessage(twitterMessageText, pan, tilt));
+			checkQueues();
+        }
+        public void onScrubGeo(long userId, long upToStatusId) {}
+        public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+        public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
+        public void onStallWarning(StallWarning warning){}
+        public void onException(Exception ex) { ex.printStackTrace();}
+    };
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -118,10 +148,16 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		}
 
 		// FFQ
-		mTTS = (mTTS == null)?(new TextToSpeech(this, this, TTS_ENGINE_PACKAGE_NAME)):mTTS;
-		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		msgQueue = (msgQueue == null)?(new LinkedList<MotorMessage>()):msgQueue;
+
+		mTTS = (mTTS == null)?(new TextToSpeech(this, this, TTS_ENGINE_PACKAGE_NAME)):mTTS;
+
+		mSMS = (mSMS == null)?(new SMSReceiver()):mSMS;
 		registerReceiver(mSMS, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
+
+		mTwitterStream = (mTwitterStream == null)?(new TwitterStreamFactory().getInstance()):mTwitterStream;
+		mTwitterStream.addListener(mTwitterStatusListener);
+		mTwitterStream.filter("pizza", "jesus");
 
 		checkQueues();
 
