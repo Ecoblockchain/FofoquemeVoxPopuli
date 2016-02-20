@@ -32,7 +32,7 @@ import twitter4j.TwitterStreamFactory;
 
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
 	// TAG is used to debug in Android logcat console
-	private static final String TAG = "VoxPopTag ";
+	private static final String TAG = "!!!VOXPOP!!! ";
 	private static final String TTS_ENGINE_PACKAGE_NAME = "com.svox.classic";
 
 	private TextToSpeech mTTS = null;
