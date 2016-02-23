@@ -34,6 +34,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "!!!VOXPOP!!! ";
 	private static final String TTS_ENGINE_PACKAGE_NAME = "com.google.android.tts";
+	private static final String[] TWITTER_FILTER_TERMS = new String[]{"nottoopublic", "tateartgym"};
 
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
@@ -84,7 +85,10 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
         public void onStatus(Status status) {
 			String twitterMessageText = status.getText();
 
-			// TODO: remove the hashtagged word?
+			// remove the filter terms
+			for(String term : TWITTER_FILTER_TERMS){
+				twitterMessageText = twitterMessageText.replaceAll(term, "");
+			}
 			// clean up the @/# if it's there...
 			twitterMessageText = twitterMessageText.replaceAll("[@#]?", "");
 			twitterMessageText = twitterMessageText.replaceAll("[():]+", "");
@@ -119,7 +123,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		mTwitterStream = (mTwitterStream == null)?(new TwitterStreamFactory().getInstance()):mTwitterStream;
 		mTwitterStream.addListener(mTwitterStatusListener);
-		mTwitterStream.filter("nottoopublic", "tateartgym");
+		mTwitterStream.filter(TWITTER_FILTER_TERMS);
 
 		checkQueues();
 
