@@ -33,7 +33,7 @@ import twitter4j.TwitterStreamFactory;
 public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitListener {
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "!!!VOXPOP!!! ";
-	private static final String TTS_ENGINE_PACKAGE_NAME = "com.svox.classic";
+	private static final String TTS_ENGINE_PACKAGE_NAME = "com.google.android.tts";
 
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
@@ -84,6 +84,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
         public void onStatus(Status status) {
 			String twitterMessageText = status.getText();
 
+			// TODO: remove the hashtagged word?
 			// clean up the @/# if it's there...
 			twitterMessageText = twitterMessageText.replaceAll("[@#]?", "");
 			twitterMessageText = twitterMessageText.replaceAll("[():]+", "");
@@ -118,7 +119,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		mTwitterStream = (mTwitterStream == null)?(new TwitterStreamFactory().getInstance()):mTwitterStream;
 		mTwitterStream.addListener(mTwitterStatusListener);
-		mTwitterStream.filter("pizza", "jesus");
+		mTwitterStream.filter("nottoopublic", "tateartgym");
 
 		checkQueues();
 
@@ -136,9 +137,8 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 	// from OnInitListener interface
 	public void onInit(int status){
-		// set the language for tts (this is the value for Luciana)
-		// TODO: en_UK ??
-		mTTS.setLanguage(new Locale("pt_BR"));
+		// set the language
+		mTTS.setLanguage(new Locale("en", "GB"));
 
 		// slow her down a little...
 		mTTS.setSpeechRate(0.66f);
