@@ -1,6 +1,10 @@
 package me.fofoque.voxpopuli;
  
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Locale;
@@ -35,6 +39,7 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	private static final String TAG = "!!!VOXPOP!!! ";
 	private static final String TTS_ENGINE_PACKAGE_NAME = "com.google.android.tts";
 	private static final String[] TWITTER_FILTER_TERMS = new String[]{"nottoopublic", "tateartgym"};
+	private static String[] TATE_FILTER_TERMS = null;
 
 	private TextToSpeech mTTS = null;
 	private SMSReceiver mSMS = null;
@@ -67,10 +72,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 					// only write if it's from a real number
 					if(phoneNum.length() > 5) {
-						// clean up the @/# if it's there...
-						smsMessageText = smsMessageText.replaceAll("[@#]?", "");
-						smsMessageText = smsMessageText.replaceAll("[():]+", "");
-
 						// add to queue
 						Log.d(TAG, "Adding: ("+smsMessageText+") to queue");
 						msgQueue.offer(smsMessageText);
@@ -84,14 +85,6 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 	StatusListener mTwitterStatusListener = new StatusListener(){
         public void onStatus(Status status) {
 			String twitterMessageText = status.getText();
-
-			// remove the filter terms
-			for(String term : TWITTER_FILTER_TERMS){
-				twitterMessageText = twitterMessageText.replaceAll(term, "");
-			}
-			// clean up the @/# if it's there...
-			twitterMessageText = twitterMessageText.replaceAll("[@#]?", "");
-			twitterMessageText = twitterMessageText.replaceAll("[():]+", "");
 
 			// add to queue
 			Log.d(TAG, "Adding: ("+twitterMessageText+") to queue");
@@ -129,6 +122,25 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 
 		// GUI
 		setContentView(R.layout.main);
+
+		// read naughty word list
+		try {
+		    InputStream fIn = getApplicationContext().getResources().getAssets().open("filter_words.txt", Context.MODE_WORLD_READABLE);
+		    BufferedReader input = new BufferedReader(new InputStreamReader(fIn));
+
+		    ArrayList<String> tempWordList = new ArrayList<String>();
+
+		    String line = "";
+		    while ((line = input.readLine()) != null) {
+		        tempWordList.add(line.toLowerCase(new Locale("en")));
+		    }
+
+		    TATE_FILTER_TERMS = new String[tempWordList.size()];
+		    for(int i=0; i<tempWordList.size(); i++){
+				TATE_FILTER_TERMS[i] = new String(tempWordList.get(i));
+		    }
+		}
+		catch (Exception e) {}
 	}
 
 	@Override
@@ -173,7 +185,22 @@ public class VoxPopuliActivity extends Activity implements TextToSpeech.OnInitLi
 		// check queue for new messages
 		if(msgQueue.peek() != null){
 			Log.d(TAG, "There's message in queue. Playing!");
-			playMessage(msgQueue.poll());
+			String msgText = msgQueue.poll().toLowerCase(new Locale("en"));
+
+			// remove the filter terms
+			for(String term : TWITTER_FILTER_TERMS){
+				msgText = msgText.replaceAll(term, "");
+			}
+			// remove the bad words
+			for(String term : TATE_FILTER_TERMS){
+				msgText = msgText.replaceAll(term, "");
+			}
+
+			// clean up the @/# if it's there...
+			msgText = msgText.replaceAll("[@#]?", "");
+			msgText = msgText.replaceAll("[():]+", "");
+
+			playMessage(msgText);
 		}
 	}
 
